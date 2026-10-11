@@ -26,6 +26,10 @@ button{background:var(--card);border:1px solid var(--bd);border-radius:8px;paddi
 .who{font-size:12px;padding:2px 8px;border-radius:8px;border:1px solid var(--bd);color:var(--tx2)}
 .h{font-size:13px;color:var(--tx2);margin:18px 0 0}
 #banner{display:none;background:var(--wnbg);color:var(--wn);border-radius:8px;padding:10px 12px;margin-bottom:12px}
+.dots{display:flex;gap:10px;margin-bottom:8px;align-items:center}
+.dot{width:28px;height:28px;border-radius:50%;padding:0;border:2px solid transparent}
+.dot.on{border-color:var(--tx)}
+.bar{width:4px;align-self:stretch;border-radius:2px;flex:none}
 nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))}
 nav button{flex:1;border:none;background:none;padding:10px 0;font-size:14px;color:var(--tx2)}
 nav button.on{color:var(--ac);font-weight:500}
@@ -42,6 +46,8 @@ nav button.on{color:var(--ac);font-weight:500}
 <section id="s-event">
 <div class="row"><input id="i-date" type="date"><input id="i-time" type="time" style="width:120px;flex:none"></div>
 <div class="row"><input id="i-etitle" placeholder="歯医者"><input id="i-who" value="家族" style="width:90px;flex:none"></div>
+<div class="row"><input id="i-note" placeholder="一言メモ（任意）"></div>
+<div class="dots" id="dots"></div>
 <div class="row"><button class="pri" style="flex:1" onclick="addEvent()">予定を追加</button></div>
 <p class="err" id="e-event"></p><div id="l-event"></div>
 </section>
@@ -58,6 +64,7 @@ nav button.on{color:var(--ac);font-weight:500}
 <div class="row"><button class="pri" style="flex:1" onclick="addMemo()">メモを保存</button></div>
 <p class="err" id="e-memo"></p><div id="l-memo"></div>
 </section>
+<p style="text-align:center;margin-top:24px"><button onclick="refreshApp()">最新の画面に更新</button></p>
 </main>
 <nav>
 <button id="n-todo" onclick="show('todo')">TODO</button>
@@ -83,7 +90,7 @@ function dl(k,i){S[k].splice(i,1);render()}
 function xb(k,i){return '<button class="x" aria-label="削除" onclick="dl(\''+k+'\','+i+')">×</button>'}
 function tg(i){S.todos[i].d=!S.todos[i].d;render()}
 function addTodo(){var v=$('i-todo').value.trim();if(!v){err('e-todo','内容を入力してください');return}S.todos.unshift({t:v,d:false});$('i-todo').value='';render()}
-function addEvent(){var d=$('i-date').value,t=$('i-etitle').value.trim();if(!d){err('e-event','日付を選んでください');return}if(!t){err('e-event','予定の内容を入力してください');return}S.events.push({date:d,time:$('i-time').value,title:t,who:$('i-who').value.trim()||'家族'});$('i-etitle').value='';render()}
+function addEvent(){var d=$('i-date').value,t=$('i-etitle').value.trim();if(!d){err('e-event','日付を選んでください');return}if(!t){err('e-event','予定の内容を入力してください');return}S.events.push({date:d,time:$('i-time').value,title:t,who:$('i-who').value.trim()||'家族',note:$('i-note').value.trim(),color:col});$('i-etitle').value='';$('i-note').value='';render()}
 function addRem(){var t=$('i-rtext').value.trim(),a=$('i-rat').value;if(!t){err('e-rem','内容を入力してください');return}if(!a){err('e-rem','日時を選んでください');return}S.rems.push({text:t,at:a,fired:false});$('i-rtext').value='';render()}
 function addMemo(){var v=$('i-memo').value.trim();if(!v){err('e-memo','メモを入力してください');return}S.memos.unshift({t:v});$('i-memo').value='';render()}
 function render(){
@@ -92,13 +99,17 @@ function render(){
  var td=ymd(new Date());
  var idx=S.events.map(function(e,i){return {e:e,i:i}}).sort(function(a,b){return (a.e.date+a.e.time)<(b.e.date+b.e.time)?-1:1});
  var up=idx.filter(function(o){return o.e.date>=td}),past=idx.filter(function(o){return o.e.date<td}).reverse();
- function ev(o,dim){var e=o.e;return '<div class="item" style="'+(dim?'opacity:.5':'')+'"><div class="t"><div>'+esc(e.title)+'</div><p class="sub">'+label(e.date)+(e.time?' '+e.time:'')+'</p></div>'+(e.date===td?'<span class="badge">今日</span>':'')+'<span class="who">'+esc(e.who)+'</span>'+xb('events',o.i)+'</div>'}
+ function ev(o,dim){var e=o.e;return '<div class="item" style="'+(dim?'opacity:.5':'')+'"><span class="bar" style="background:'+(/^#[0-9a-f]{6}$/i.test(e.color||'')?e.color:'var(--bd)')+'"></span><div class="t"><div>'+esc(e.title)+'</div><p class="sub">'+label(e.date)+(e.time?' '+e.time:'')+'</p>'+(e.note?'<p class="sub" style="color:var(--tx)">'+esc(e.note)+'</p>':'')+'</div>'+(e.date===td?'<span class="badge">今日</span>':'')+'<span class="who">'+esc(e.who)+'</span>'+xb('events',o.i)+'</div>'}
  $('l-event').innerHTML=(up.length?up.map(function(o){return ev(o,false)}).join(''):'<p class="sub">これからの予定はありません</p>')+(past.length?'<p class="h">過去の予定</p>'+past.map(function(o){return ev(o,true)}).join(''):'');
  var ri=S.rems.map(function(r,i){return {r:r,i:i}}).sort(function(a,b){return a.r.at<b.r.at?-1:1});
  $('l-rem').innerHTML=ri.length?ri.map(function(o){var r=o.r;return '<div class="item" style="'+(r.fired?'opacity:.5':'')+'"><div class="t"><div>'+esc(r.text)+'</div><p class="sub">'+label(r.at.slice(0,10))+' '+r.at.slice(11)+(r.fired?'　通知済み':'')+'</p></div>'+xb('rems',o.i)+'</div>'}).join(''):'<p class="sub">リマインダーはまだありません</p>';
  $('l-memo').innerHTML=S.memos.length?S.memos.map(function(m,i){return '<div class="item" style="align-items:flex-start"><span class="t" style="white-space:pre-wrap">'+esc(m.t)+'</span>'+xb('memos',i)+'</div>'}).join(''):'<p class="sub">メモはまだありません</p>';
 }
 function check(){var now=dtl(new Date()),hit=[];S.rems.forEach(function(r){if(!r.fired&&r.at<=now){r.fired=true;hit.push(r.text)}});if(hit.length){var b=$('banner');b.style.display='block';b.innerHTML=hit.map(esc).join('、')+' の時間です <button class="x" aria-label="閉じる" onclick="this.parentNode.style.display=\'none\'" style="float:right;padding:0 4px;color:inherit">×</button>';render()}}
+var COLORS=['#185FA5','#1D9E75','#D85A30','#BA7517','#993556','#7F77DD'],col=COLORS[0];
+function drawDots(){$('dots').innerHTML=COLORS.map(function(c,i){return '<button class="dot'+(c===col?' on':'')+'" style="background:'+c+'" aria-label="色'+(i+1)+'" onclick="col=\''+c+'\';drawDots()"></button>'}).join('')}
+function refreshApp(){fetch(location.pathname,{cache:'reload'}).catch(function(){}).then(function(){location.reload()})}
+drawDots();
 $('i-date').value=ymd(new Date());
 $('i-rat').value=dtl(new Date(Date.now()+3600000));
 var tab='todo';try{tab=localStorage.getItem('fam-app-tab')||'todo'}catch(e){}
