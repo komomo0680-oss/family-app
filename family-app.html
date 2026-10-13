@@ -3,7 +3,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>小西家</title>
 <style>
-:root{--bg:#f7f6f2;--card:#fff;--tx:#1f1e1b;--tx2:#6b6a64;--bd:#e2e0d8;--ac:#185FA5;--acbg:#E6F1FB;--dg:#A32D2D;--wnbg:#FAEEDA;--wn:#633806;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px)}
+:root{--bg:#f7f6f2;--card:#fff;--tx:#1f1e1b;--tx2:#6b6a64;--bd:#e2e0d8;--ac:#185FA5;--acbg:#E6F1FB;--dg:#A32D2D;--wnbg:#FAEEDA;--wn:#633806;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1c1b19;--card:#262522;--tx:#f1efe8;--tx2:#b4b2a9;--bd:#3a3935;--ac:#85B7EB;--acbg:#0C447C;--dg:#F09595;--wnbg:#633806;--wn:#FAC775}}
 :root[data-theme="dark"]{--bg:#1c1b19;--card:#262522;--tx:#f1efe8;--tx2:#b4b2a9;--bd:#3a3935;--ac:#85B7EB;--acbg:#0C447C;--dg:#F09595;--wnbg:#633806;--wn:#FAC775}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
@@ -30,23 +30,32 @@ button{background:var(--card);border:1px solid var(--bd);border-radius:8px;paddi
 .dot{width:28px;height:28px;border-radius:50%;padding:0;border:2px solid transparent}
 .dot.on{border-color:var(--tx)}
 .bar{width:4px;align-self:stretch;border-radius:2px;flex:none}
+.login{max-width:560px;margin:0 auto;padding:80px 16px;text-align:center}
+.login h1{font-size:28px;margin-bottom:24px}
 nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))}
 nav button{flex:1;border:none;background:none;padding:10px 0;font-size:14px;color:var(--tx2)}
 nav button.on{color:var(--ac);font-weight:500}
 </style></head><body>
-<main>
+<div id="login" class="login" style="display:none">
+<h1>小西家</h1>
+<button class="pri" onclick="login()">Googleでログイン</button>
+<p class="err" id="lmsg" style="margin-top:16px"></p>
+</div>
+<main id="app" style="display:none">
 <h1 id="ttl">TODO</h1>
 <div id="banner"></div>
 
 <section id="s-todo">
+<p class="sub" style="margin-bottom:8px">家族みんなで見られるTODOです</p>
 <div class="row"><input id="i-todo" placeholder="牛乳を買う"><button class="pri" onclick="addTodo()">追加</button></div>
 <p class="err" id="e-todo"></p><div id="l-todo"></div>
 </section>
 
 <section id="s-event">
 <div class="row"><input id="i-date" type="date"><input id="i-time" type="time" style="width:120px;flex:none"></div>
-<div class="row"><input id="i-etitle" placeholder="歯医者"><input id="i-who" value="小西家" style="width:90px;flex:none"></div>
+<div class="row"><input id="i-etitle" placeholder="歯医者"><input id="i-who" value="家族" style="width:90px;flex:none"></div>
 <div class="row"><input id="i-note" placeholder="一言メモ（任意）"></div>
+<div class="row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="i-share" checked style="width:20px;height:20px"> 家族と共有する</label></div>
 <div class="dots" id="dots"></div>
 <div class="row"><button class="pri" style="flex:1" onclick="addEvent()">予定を追加</button></div>
 <p class="err" id="e-event"></p><div id="l-event"></div>
@@ -60,59 +69,92 @@ nav button.on{color:var(--ac);font-weight:500}
 </section>
 
 <section id="s-memo">
+<p class="sub" style="margin-bottom:8px">ふだんは自分だけに見えます。「家族と共有する」にチェックすると、家族にも見えます。</p>
 <div class="row"><textarea id="i-memo" rows="3" placeholder="メモを書く"></textarea></div>
+<div class="row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="i-mshare" style="width:20px;height:20px"> 家族と共有する</label></div>
 <div class="row"><button class="pri" style="flex:1" onclick="addMemo()">メモを保存</button></div>
 <p class="err" id="e-memo"></p><div id="l-memo"></div>
 </section>
-<p style="text-align:center;margin-top:24px"><button onclick="refreshApp()">最新の画面に更新</button></p>
+
+<p id="imp" style="display:none;text-align:center;margin-top:24px"><button onclick="importLocal()">この端末の古いデータを共有に取り込む</button></p>
+<p style="text-align:center;margin-top:24px"><button onclick="refreshApp()">最新の画面に更新</button> <button onclick="logout()">ログアウト</button></p>
 </main>
-<nav>
+<nav id="nav" style="display:none">
 <button id="n-todo" onclick="show('todo')">TODO</button>
 <button id="n-event" onclick="show('event')">予定</button>
 <button id="n-rem" onclick="show('rem')">リマインド</button>
 <button id="n-memo" onclick="show('memo')">メモ</button>
 </nav>
-<script>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {getAuth,onAuthStateChanged,signInWithPopup,GoogleAuthProvider,signOut} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {initializeFirestore,getFirestore,persistentLocalCache,collection,doc,addDoc,updateDoc,deleteDoc,onSnapshot,writeBatch} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+var app=initializeApp({apiKey:"AIzaSyDXpUCPANQpTppk1dhOY3B4sENz-7bw08k",authDomain:"family-app-438a1.firebaseapp.com",projectId:"family-app-438a1",storageBucket:"family-app-438a1.firebasestorage.app",messagingSenderId:"793853520735",appId:"1:793853520735:web:bf16ccfeecee2fcd76a4ea"});
+var auth=getAuth(app),db;
+try{db=initializeFirestore(app,{localCache:persistentLocalCache()})}catch(e){db=getFirestore(app)}
+function C(k){return collection(db,'families','main',k)}
+function D(k,id){return doc(db,'families','main',k,id)}
+function U(k){return collection(db,'users',auth.currentUser.uid,k)}
+function UD(k,id){return doc(db,'users',auth.currentUser.uid,k,id)}
 var $=function(i){return document.getElementById(i)};
-var W=['日','月','火','水','木','金','土'],TT={todo:'TODO',event:'予定',rem:'リマインド',memo:'メモ'};
-function esc(s){return String(s).replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+var W=['日','月','火','水','木','金','土'],TT={todo:'TODO',event:'予定',rem:'リマインド',memo:'メモ'},KS=['todos','events','rems','memos'];
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function p2(n){return String(n).padStart(2,'0')}
 function ymd(d){return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())}
 function dtl(d){return ymd(d)+'T'+p2(d.getHours())+':'+p2(d.getMinutes())}
 function label(s){var d=new Date(s+'T00:00');return (d.getMonth()+1)+'月'+d.getDate()+'日（'+W[d.getDay()]+'）'}
-var S={todos:[],events:[],rems:[],memos:[]};
-try{var raw=localStorage.getItem('fam-app-v1');if(raw){var o=JSON.parse(raw);for(var k in S){if(Array.isArray(o[k]))S[k]=o[k]}}}catch(e){}
-function save(){try{localStorage.setItem('fam-app-v1',JSON.stringify(S))}catch(e){}}
-function show(n){['todo','event','rem','memo'].forEach(function(k){$('s-'+k).style.display=k===n?'block':'none';$('n-'+k).className=k===n?'on':''});$('ttl').textContent=TT[n];try{localStorage.setItem('fam-app-tab',n)}catch(e){}}
+var S={todos:[],events:[],rems:[],memos:[],evS:[],evP:[],memS:[],memP:[]},unsubs=[],fired={};
+try{fired=JSON.parse(localStorage.getItem('fam-fired')||'{}')}catch(e){}
 function err(id,m){$(id).textContent=m}
+function banner(h){var b=$('banner');b.style.display='block';b.innerHTML=h+' <button class="x" aria-label="閉じる" onclick="this.parentNode.style.display=\'none\'" style="float:right;padding:0 4px;color:inherit">×</button>'}
+function show(n){['todo','event','rem','memo'].forEach(function(k){$('s-'+k).style.display=k===n?'block':'none';$('n-'+k).className=k===n?'on':''});$('ttl').textContent=TT[n];try{localStorage.setItem('fam-app-tab',n)}catch(e){}}
 document.addEventListener('input',function(){['e-todo','e-event','e-rem','e-memo'].forEach(function(e){err(e,'')})});
-function dl(k,i){S[k].splice(i,1);render()}
+function dl(k,i){var x=S[k][i];if(x)deleteDoc(x._p?UD(k,x.id):D(k,x.id))}
 function xb(k,i){return '<button class="x" aria-label="削除" onclick="dl(\''+k+'\','+i+')">×</button>'}
-function tg(i){S.todos[i].d=!S.todos[i].d;render()}
-function addTodo(){var v=$('i-todo').value.trim();if(!v){err('e-todo','内容を入力してください');return}S.todos.unshift({t:v,d:false});$('i-todo').value='';render()}
-function addEvent(){var d=$('i-date').value,t=$('i-etitle').value.trim();if(!d){err('e-event','日付を選んでください');return}if(!t){err('e-event','予定の内容を入力してください');return}var w=$('i-who').value.trim()||'小西家';var n=$('i-note').value.trim();var c=col;S.events.unshift({date:d,time:$('i-time').value||'',title:t,who:w,note:n,color:c});$('i-date').value=ymd(new Date());$('i-time').value='';$('i-etitle').value='';$('i-who').value='小西家';$('i-note').value='';render()}
-function addRem(){var t=$('i-rtext').value.trim(),a=$('i-rat').value;if(!t){err('e-rem','内容を入力してください');return}if(!a){err('e-rem','日時を選んでください');return}S.rems.unshift({text:t,at:a,fired:false});$('i-rtext').value='';$('i-rat').value=dtl(new Date(Date.now()+3600000));render()}
-function addMemo(){var v=$('i-memo').value.trim();if(!v){err('e-memo','メモを入力してください');return}S.memos.unshift({t:v});$('i-memo').value='';render()}
+function tg(i){var x=S.todos[i];if(x)updateDoc(D('todos',x.id),{d:!x.d})}
+function addTodo(){var v=$('i-todo').value.trim();if(!v){err('e-todo','内容を入力してください');return}addDoc(C('todos'),{t:v,d:false,ts:Date.now()});$('i-todo').value=''}
+var COLORS=['#185FA5','#1D9E75','#D85A30','#BA7517','#993556','#7F77DD'],col=COLORS[0];
+function setCol(c){col=c;drawDots()}
+function drawDots(){$('dots').innerHTML=COLORS.map(function(c,i){return '<button class="dot'+(c===col?' on':'')+'" style="background:'+c+'" aria-label="色'+(i+1)+'" onclick="setCol(\''+c+'\')"></button>'}).join('')}
+function addEvent(){var d=$('i-date').value,t=$('i-etitle').value.trim();if(!d){err('e-event','日付を選んでください');return}if(!t){err('e-event','予定の内容を入力してください');return}addDoc($('i-share').checked?C('events'):U('events'),{date:d,time:$('i-time').value,title:t,who:$('i-who').value.trim()||'家族',note:$('i-note').value.trim(),color:col,ts:Date.now()});$('i-etitle').value='';$('i-note').value=''}
+function addRem(){var t=$('i-rtext').value.trim(),a=$('i-rat').value;if(!t){err('e-rem','内容を入力してください');return}if(!a){err('e-rem','日時を選んでください');return}addDoc(C('rems'),{text:t,at:a,ts:Date.now()});$('i-rtext').value=''}
+function addMemo(){var v=$('i-memo').value.trim();if(!v){err('e-memo','メモを入力してください');return}addDoc($('i-mshare').checked?C('memos'):U('memos'),{t:v,ts:Date.now()});$('i-memo').value=''}
 function render(){
- save();
- $('l-todo').innerHTML=S.todos.length?S.todos.map(function(x,i){return '<div class="item"><input type="checkbox" '+(x.d?'checked':'')+' onchange="tg('+i+')" style="width:22px;height:22px;flex:none"><span class="t '+(x.d?'done':'')+'">'+esc(x.t)+'</span>'+xb('todo',i)+'</div>'}).join(''):'<p class="sub">TODOはありません</p>';
+ $('l-todo').innerHTML=S.todos.length?S.todos.map(function(x,i){return '<div class="item"><input type="checkbox" '+(x.d?'checked':'')+' onchange="tg('+i+')" style="width:22px;height:22px;flex:none"><span class="t '+(x.d?'done':'')+'">'+esc(x.t)+'</span>'+xb('todos',i)+'</div>'}).join(''):'<p class="sub">TODOはまだありません</p>';
  var td=ymd(new Date());
  var idx=S.events.map(function(e,i){return {e:e,i:i}}).sort(function(a,b){return (a.e.date+a.e.time)<(b.e.date+b.e.time)?-1:1});
  var up=idx.filter(function(o){return o.e.date>=td}),past=idx.filter(function(o){return o.e.date<td}).reverse();
- function ev(o,dim){var e=o.e;return '<div class="item" style="'+(dim?'opacity:.5':'')+'"><span class="bar" style="background:'+(/^#[0-9a-f]{6}$/i.test(e.color||'')?e.color:'var(--bd)')+'"></span><div class="t"><div>'+esc(e.title)+(e.who?'<span class="who" style="margin-left:8px">'+esc(e.who)+'</span>':'')+'</div>'+(e.note?'<p class="sub">'+esc(e.note)+'</p>':'')+'<p class="sub">'+label(e.date)+(e.time?' '+e.time:'')+'</p></div>'+xb('event',o.i)+'</div>'}
+ function ev(o,dim){var e=o.e;return '<div class="item" style="'+(dim?'opacity:.5':'')+'"><span class="bar" style="background:'+(/^#[0-9a-f]{6}$/i.test(e.color||'')?e.color:'var(--bd)')+'"></span><div class="t"><div>'+esc(e.title)+'</div><p class="sub">'+label(e.date)+(e.time?' '+e.time:'')+'</p>'+(e.note?'<p class="sub" style="color:var(--tx)">'+esc(e.note)+'</p>':'')+'</div>'+(e.date===td?'<span class="badge">今日</span>':'')+(e._p?'<span class="who">自分のみ</span>':'')+'<span class="who">'+esc(e.who||'')+'</span>'+xb('events',o.i)+'</div>'}
  $('l-event').innerHTML=(up.length?up.map(function(o){return ev(o,false)}).join(''):'<p class="sub">これからの予定はありません</p>')+(past.length?'<p class="h">過去の予定</p>'+past.map(function(o){return ev(o,true)}).join(''):'');
  var ri=S.rems.map(function(r,i){return {r:r,i:i}}).sort(function(a,b){return a.r.at<b.r.at?-1:1});
- $('l-rem').innerHTML=ri.length?ri.map(function(o){var r=o.r;return '<div class="item" style="'+(r.fired?'opacity:.5':'')+'"><div class="t"><div>'+esc(r.text)+'</div><p class="sub">'+label(r.at.slice(0,10))+' '+r.at.slice(11)+'に通知</p></div>'+xb('rems',o.i)+'</div>'}).join(''):'<p class="sub">リマインドはありません</p>';
- $('l-memo').innerHTML=S.memos.length?S.memos.map(function(m,i){return '<div class="item" style="align-items:flex-start"><span class="t" style="white-space:pre-wrap">'+esc(m.t)+'</span>'+xb('memos',i)+'</div>'}).join(''):'<p class="sub">メモはありません</p>';
+ $('l-rem').innerHTML=ri.length?ri.map(function(o){var r=o.r,f=fired[r.id];return '<div class="item" style="'+(f?'opacity:.5':'')+'"><div class="t"><div>'+esc(r.text)+'</div><p class="sub">'+label(r.at.slice(0,10))+' '+r.at.slice(11)+(f?'　通知済み':'')+'</p></div>'+xb('rems',o.i)+'</div>'}).join(''):'<p class="sub">リマインダーはまだありません</p>';
+ $('l-memo').innerHTML=S.memos.length?S.memos.map(function(m,i){return '<div class="item" style="align-items:flex-start"><span class="t" style="white-space:pre-wrap">'+esc(m.t)+'</span>'+(m._p?'<span class="who">自分のみ</span>':'<span class="badge">共有</span>')+xb('memos',i)+'</div>'}).join(''):'<p class="sub">メモはまだありません</p>';
 }
-function check(){var now=dtl(new Date()),hit=[];S.rems.forEach(function(r){if(!r.fired&&r.at<=now){r.fired=true;hit.push(r.text)}});if(hit.length){var b=$('banner');b.style.display='block';b.innerHTML='リマインド: '+hit.map(esc).join(' / ');setTimeout(function(){b.style.display='none'},8000)}}
-var COLORS=['#185FA5','#1D9E75','#D85A30','#BA7517','#993556','#7F77DD'],col=COLORS[0];
-function drawDots(){$('dots').innerHTML=COLORS.map(function(c,i){return '<button class="dot'+(c===col?' on':'')+'" style="background:'+c+'" aria-label="色'+(i+1)+'" onclick="col=\''+c+'\';drawDots()" type="button"></button>'}).join('')}
+function check(){var now=dtl(new Date()),old=dtl(new Date(Date.now()-864e5)),hit=[],ch=false;S.rems.forEach(function(r){if(fired[r.id]||r.at>now)return;fired[r.id]=1;ch=true;if(r.at>=old)hit.push(r.text)});if(ch){try{localStorage.setItem('fam-fired',JSON.stringify(fired))}catch(e){}if(hit.length)banner(hit.map(esc).join('、')+' の時間です');render()}}
+function stop(){unsubs.forEach(function(u){u()});unsubs=[]}
+function denied(){stop();signOut(auth).then(function(){err('lmsg','このGoogleアカウントは許可されていません。')})}
+function lc(ref,key,priv){return onSnapshot(ref,function(sn){S[key]=sn.docs.map(function(d){return Object.assign({id:d.id,_p:priv},d.data())});if(key==='todos')S[key].sort(function(a,b){return (b.ts||0)-(a.ts||0)});if(key==='memS'||key==='memP')S.memos=S.memS.concat(S.memP).sort(function(a,b){return (b.ts||0)-(a.ts||0)});if(key==='evS'||key==='evP')S.events=S.evS.concat(S.evP);render();if(key==='rems')check()},function(e){if(e.code==='permission-denied'){if(priv)banner('Firebaseのルールを更新してください');else denied()}})}
+function listen(){stop();unsubs=[lc(C('todos'),'todos',0),lc(C('rems'),'rems',0),lc(C('events'),'evS',0),lc(U('events'),'evP',1),lc(C('memos'),'memS',0),lc(U('memos'),'memP',1)]}
+function localData(){try{return JSON.parse(localStorage.getItem('fam-app-v1')||'null')}catch(e){return null}}
+function showImport(){var o=localData(),n=0;if(o)KS.forEach(function(k){n+=(o[k]||[]).length});$('imp').style.display=(n&&!localStorage.getItem('fam-app-imported'))?'block':'none'}
+function importLocal(){var o=localData();if(!o)return;var b=writeBatch(db),now=Date.now();
+ (o.todos||[]).forEach(function(x,j){b.set(doc(C('todos')),{t:x.t,d:!!x.d,ts:now-j})});
+ (o.events||[]).forEach(function(x,j){b.set(doc(C('events')),{date:x.date,time:x.time||'',title:x.title,who:x.who||'家族',note:x.note||'',color:x.color||'',ts:now-j})});
+ (o.rems||[]).forEach(function(x,j){b.set(doc(C('rems')),{text:x.text,at:x.at,ts:now-j})});
+ (o.memos||[]).forEach(function(x,j){b.set(doc(U('memos')),{t:x.t,ts:now-j})});
+ b.commit().then(function(){try{localStorage.setItem('fam-app-imported','1')}catch(e){}showImport();banner('取り込みました')}).catch(function(){banner('取り込みに失敗しました')})}
+function login(){err('lmsg','');signInWithPopup(auth,new GoogleAuthProvider()).catch(function(e){err('lmsg','ログインできませんでした（'+(e.code||'')+'）')})}
+function logout(){stop();signOut(auth)}
 function refreshApp(){fetch(location.pathname,{cache:'reload'}).catch(function(){}).then(function(){location.reload()})}
-drawDots();
+Object.assign(window,{show:show,dl:dl,tg:tg,addTodo:addTodo,addEvent:addEvent,addRem:addRem,addMemo:addMemo,setCol:setCol,importLocal:importLocal,login:login,logout:logout,refreshApp:refreshApp});
 $('i-date').value=ymd(new Date());
 $('i-rat').value=dtl(new Date(Date.now()+3600000));
+drawDots();
 var tab='todo';try{tab=localStorage.getItem('fam-app-tab')||'todo'}catch(e){}
-render();show(TT[tab]?tab:'todo');check();
+show(TT[tab]?tab:'todo');render();
+onAuthStateChanged(auth,function(u){
+ var on=!!u;$('login').style.display=on?'none':'block';$('app').style.display=on?'block':'none';$('nav').style.display=on?'flex':'none';
+ if(on){err('lmsg','');$('i-who').value=((u.displayName||'家族').split(/\s+/)[0]).slice(0,6);showImport();listen()}else{stop()}
+});
 setInterval(check,10000);
 </script></body></html>
