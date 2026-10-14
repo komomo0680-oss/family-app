@@ -32,8 +32,10 @@ button{background:var(--card);border:1px solid var(--bd);border-radius:8px;paddi
 .bar{width:4px;align-self:stretch;border-radius:2px;flex:none}
 .login{max-width:560px;margin:0 auto;padding:80px 16px;text-align:center}
 .login h1{font-size:28px;margin-bottom:24px}
+.msg{max-width:80%;padding:8px 12px;border-radius:12px;margin:2px 0;background:var(--card);border:1px solid var(--bd);word-break:break-word;white-space:pre-wrap}
+.msg.me{background:var(--acbg)}
 nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))}
-nav button{flex:1;border:none;background:none;padding:10px 0;font-size:14px;color:var(--tx2)}
+nav button{flex:1;border:none;background:none;padding:10px 0;font-size:13px;color:var(--tx2)}
 nav button.on{color:var(--ac);font-weight:500}
 </style></head><body>
 <div id="login" class="login" style="display:none">
@@ -57,6 +59,7 @@ nav button.on{color:var(--ac);font-weight:500}
 <div class="row"><input id="i-etitle" placeholder="歯医者"><input id="i-who" value="家族" style="width:90px;flex:none"></div>
 <div class="row"><input id="i-note" placeholder="一言メモ（任意）"></div>
 <div class="row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="i-share" checked style="width:20px;height:20px"> 家族と共有する</label></div>
+<div class="row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="i-auto" checked style="width:20px;height:20px"> 前日の夜と直前に通知する</label></div>
 <div class="dots" id="dots"></div>
 <div class="row"><button class="pri" style="flex:1" onclick="addEvent()">予定を追加</button></div>
 <p class="err" id="e-event"></p><div id="l-event"></div>
@@ -65,6 +68,7 @@ nav button.on{color:var(--ac);font-weight:500}
 <section id="s-rem">
 <div class="row"><input id="i-rtext" placeholder="薬を飲む"></div>
 <div class="row"><input id="i-rat" type="datetime-local"><button class="pri" onclick="addRem()">追加</button></div>
+<div class="row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="i-rshare" style="width:20px;height:20px"> 家族と共有する</label></div>
 <p class="err" id="e-rem"></p><div id="l-rem"></div>
 <p class="sub" style="margin-top:12px">このページを開いている間、時間になると上に表示されます。</p>
 </section>
@@ -77,6 +81,11 @@ nav button.on{color:var(--ac);font-weight:500}
 <p class="err" id="e-memo"></p><div id="l-memo"></div>
 </section>
 
+<section id="s-chat">
+<div id="l-chat" style="min-height:40vh"></div>
+<div class="row" style="margin-top:12px"><input id="i-chat" placeholder="メッセージ"><button class="pri" onclick="sendChat()">送信</button></div>
+</section>
+
 <p id="imp" style="display:none;text-align:center;margin-top:24px"><button onclick="importLocal()">この端末の古いデータを共有に取り込む</button></p>
 <p style="text-align:center;margin-top:24px"><button onclick="refreshApp()">最新の画面に更新</button> <button onclick="logout()">ログアウト</button></p>
 </main>
@@ -85,11 +94,12 @@ nav button.on{color:var(--ac);font-weight:500}
 <button id="n-event" onclick="show('event')">予定</button>
 <button id="n-rem" onclick="show('rem')">リマインド</button>
 <button id="n-memo" onclick="show('memo')">メモ</button>
+<button id="n-chat" onclick="show('chat')">チャット</button>
 </nav>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {getAuth,onAuthStateChanged,signInWithPopup,GoogleAuthProvider,signOut} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import {initializeFirestore,getFirestore,persistentLocalCache,collection,doc,addDoc,updateDoc,deleteDoc,onSnapshot,writeBatch} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import {initializeFirestore,getFirestore,persistentLocalCache,collection,doc,addDoc,updateDoc,deleteDoc,onSnapshot,writeBatch,query,orderBy,limit} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 var app=initializeApp({apiKey:"AIzaSyDXpUCPANQpTppk1dhOY3B4sENz-7bw08k",authDomain:"family-app-438a1.firebaseapp.com",projectId:"family-app-438a1",storageBucket:"family-app-438a1.firebasestorage.app",messagingSenderId:"793853520735",appId:"1:793853520735:web:bf16ccfeecee2fcd76a4ea"});
 var auth=getAuth(app),db;
 try{db=initializeFirestore(app,{localCache:persistentLocalCache()})}catch(e){db=getFirestore(app)}
@@ -98,27 +108,27 @@ function D(k,id){return doc(db,'families','main',k,id)}
 function U(k){return collection(db,'users',auth.currentUser.uid,k)}
 function UD(k,id){return doc(db,'users',auth.currentUser.uid,k,id)}
 var $=function(i){return document.getElementById(i)};
-var W=['日','月','火','水','木','金','土'],TT={todo:'TODO',event:'予定',rem:'リマインド',memo:'メモ'},KS=['todos','events','rems','memos'];
+var W=['日','月','火','水','木','金','土'],TT={todo:'TODO',event:'予定',rem:'リマインド',memo:'メモ',chat:'チャット'},KS=['todos','events','rems','memos'];
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function p2(n){return String(n).padStart(2,'0')}
 function ymd(d){return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())}
 function dtl(d){return ymd(d)+'T'+p2(d.getHours())+':'+p2(d.getMinutes())}
 function label(s){var d=new Date(s+'T00:00');return (d.getMonth()+1)+'月'+d.getDate()+'日（'+W[d.getDay()]+'）'}
-var S={todos:[],events:[],rems:[],memos:[],evS:[],evP:[],memS:[],memP:[],todS:[],todP:[]},unsubs=[],fired={};
+var S={todos:[],events:[],rems:[],memos:[],evS:[],evP:[],memS:[],memP:[],todS:[],todP:[],chat:[],remS:[],remP:[]},curTab='todo',unsubs=[],fired={};
 try{fired=JSON.parse(localStorage.getItem('fam-fired')||'{}')}catch(e){}
 function err(id,m){$(id).textContent=m}
 function banner(h){var b=$('banner');b.style.display='block';b.innerHTML=h+' <button class="x" aria-label="閉じる" onclick="this.parentNode.style.display=\'none\'" style="float:right;padding:0 4px;color:inherit">×</button>'}
-function show(n){['todo','event','rem','memo'].forEach(function(k){$('s-'+k).style.display=k===n?'block':'none';$('n-'+k).className=k===n?'on':''});$('ttl').textContent='小西家 ｜ '+TT[n];try{localStorage.setItem('fam-app-tab',n)}catch(e){}}
+function show(n){curTab=n;if(n==='chat')setTimeout(function(){window.scrollTo(0,document.body.scrollHeight)},50);['todo','event','rem','memo','chat'].forEach(function(k){$('s-'+k).style.display=k===n?'block':'none';$('n-'+k).className=k===n?'on':''});$('ttl').textContent='小西家 ｜ '+TT[n];try{localStorage.setItem('fam-app-tab',n)}catch(e){}}
 document.addEventListener('input',function(){['e-todo','e-event','e-rem','e-memo'].forEach(function(e){err(e,'')})});
-function dl(k,i){var x=S[k][i];if(x)deleteDoc(x._p?UD(k,x.id):D(k,x.id))}
+function dl(k,i){var x=S[k][i];if(!x)return;if(k==='events')S.rems.forEach(function(r){if(r.evId===x.id)deleteDoc(r._p?UD('rems',r.id):D('rems',r.id))});deleteDoc(x._p?UD(k,x.id):D(k,x.id))}
 function xb(k,i){return '<button class="x" aria-label="削除" onclick="dl(\''+k+'\','+i+')">×</button>'}
 function tg(i){var x=S.todos[i];if(x)updateDoc(x._p?UD('todos',x.id):D('todos',x.id),{d:!x.d})}
 function addTodo(){var v=$('i-todo').value.trim();if(!v){err('e-todo','内容を入力してください');return}addDoc($('i-tshare').checked?C('todos'):U('todos'),{t:v,d:false,ts:Date.now()});$('i-todo').value=''}
 var COLORS=['#185FA5','#1D9E75','#D85A30','#BA7517','#993556','#7F77DD'],col=COLORS[0];
 function setCol(c){col=c;drawDots()}
 function drawDots(){$('dots').innerHTML=COLORS.map(function(c,i){return '<button class="dot'+(c===col?' on':'')+'" style="background:'+c+'" aria-label="色'+(i+1)+'" onclick="setCol(\''+c+'\')"></button>'}).join('')}
-function addEvent(){var d=$('i-date').value,t=$('i-etitle').value.trim();if(!d){err('e-event','日付を選んでください');return}if(!t){err('e-event','予定の内容を入力してください');return}addDoc($('i-share').checked?C('events'):U('events'),{date:d,time:$('i-time').value,title:t,who:$('i-who').value.trim()||'家族',note:$('i-note').value.trim(),color:col,ts:Date.now()});$('i-etitle').value='';$('i-note').value=''}
-function addRem(){var t=$('i-rtext').value.trim(),a=$('i-rat').value;if(!t){err('e-rem','内容を入力してください');return}if(!a){err('e-rem','日時を選んでください');return}addDoc(C('rems'),{text:t,at:a,ts:Date.now()});$('i-rtext').value=''}
+function addEvent(){var d=$('i-date').value,t=$('i-etitle').value.trim();if(!d){err('e-event','日付を選んでください');return}if(!t){err('e-event','予定の内容を入力してください');return}var sh=$('i-share').checked,tm=$('i-time').value;addDoc(sh?C('events'):U('events'),{date:d,time:$('i-time').value,title:t,who:$('i-who').value.trim()||'家族',note:$('i-note').value.trim(),color:col,ts:Date.now()}).then(function(ref){if($('i-auto').checked)mkRems(ref.id,d,tm,t,sh)});$('i-etitle').value='';$('i-note').value=''}
+function addRem(){var t=$('i-rtext').value.trim(),a=$('i-rat').value;if(!t){err('e-rem','内容を入力してください');return}if(!a){err('e-rem','日時を選んでください');return}addDoc($('i-rshare').checked?C('rems'):U('rems'),{text:t,at:a,ts:Date.now()});$('i-rtext').value=''}
 function addMemo(){var v=$('i-memo').value.trim();if(!v){err('e-memo','メモを入力してください');return}addDoc($('i-mshare').checked?C('memos'):U('memos'),{t:v,ts:Date.now()});$('i-memo').value=''}
 function render(){
  $('l-todo').innerHTML=S.todos.length?S.todos.map(function(x,i){return '<div class="item"><input type="checkbox" '+(x.d?'checked':'')+' onchange="tg('+i+')" style="width:22px;height:22px;flex:none"><span class="t '+(x.d?'done':'')+'">'+esc(x.t)+'</span>'+(x._p?'<span class="who">自分のみ</span>':'')+xb('todos',i)+'</div>'}).join(''):'<p class="sub">TODOはまだありません</p>';
@@ -128,14 +138,18 @@ function render(){
  function ev(o,dim){var e=o.e;return '<div class="item" style="'+(dim?'opacity:.5':'')+'"><span class="bar" style="background:'+(/^#[0-9a-f]{6}$/i.test(e.color||'')?e.color:'var(--bd)')+'"></span><div class="t"><div>'+esc(e.title)+'</div><p class="sub">'+label(e.date)+(e.time?' '+e.time:'')+'</p>'+(e.note?'<p class="sub" style="color:var(--tx)">'+esc(e.note)+'</p>':'')+'</div>'+(e.date===td?'<span class="badge">今日</span>':'')+(e._p?'<span class="who">自分のみ</span>':'')+'<span class="who">'+esc(e.who||'')+'</span>'+xb('events',o.i)+'</div>'}
  $('l-event').innerHTML=(up.length?up.map(function(o){return ev(o,false)}).join(''):'<p class="sub">これからの予定はありません</p>')+(past.length?'<p class="h">過去の予定</p>'+past.map(function(o){return ev(o,true)}).join(''):'');
  var ri=S.rems.map(function(r,i){return {r:r,i:i}}).sort(function(a,b){return a.r.at<b.r.at?-1:1});
- $('l-rem').innerHTML=ri.length?ri.map(function(o){var r=o.r,f=fired[r.id];return '<div class="item" style="'+(f?'opacity:.5':'')+'"><div class="t"><div>'+esc(r.text)+'</div><p class="sub">'+label(r.at.slice(0,10))+' '+r.at.slice(11)+(f?'　通知済み':'')+'</p></div>'+xb('rems',o.i)+'</div>'}).join(''):'<p class="sub">リマインダーはまだありません</p>';
+ $('l-rem').innerHTML=ri.length?ri.map(function(o){var r=o.r,f=fired[r.id];return '<div class="item" style="'+(f?'opacity:.5':'')+'"><div class="t"><div>'+esc(r.text)+'</div><p class="sub">'+label(r.at.slice(0,10))+' '+r.at.slice(11)+(f?'　通知済み':'')+'</p></div>'+(r._p?'<span class="who">自分のみ</span>':'')+xb('rems',o.i)+'</div>'}).join(''):'<p class="sub">リマインダーはまだありません</p>';
  $('l-memo').innerHTML=S.memos.length?S.memos.map(function(m,i){return '<div class="item" style="align-items:flex-start"><span class="t" style="white-space:pre-wrap">'+esc(m.t)+'</span>'+(m._p?'<span class="who">自分のみ</span>':'<span class="badge">共有</span>')+xb('memos',i)+'</div>'}).join(''):'<p class="sub">メモはまだありません</p>';
+ var me=auth.currentUser?auth.currentUser.uid:'';
+ $('l-chat').innerHTML=S.chat.length?S.chat.map(function(c,i){var mine=c.uid===me,d=new Date(c.ts||0);return '<div style="display:flex;flex-direction:column;align-items:'+(mine?'flex-end':'flex-start')+'"><p class="sub" style="margin-top:8px">'+esc(c.who||'')+'　'+(d.getMonth()+1)+'/'+d.getDate()+' '+d.getHours()+':'+p2(d.getMinutes())+(mine?'<button class="x" aria-label="削除" onclick="dl(\'chat\','+i+')" style="font-size:16px">×</button>':'')+'</p><div class="msg'+(mine?' me':'')+'">'+esc(c.text)+'</div></div>'}).join(''):'<p class="sub">まだメッセージはありません</p>';
 }
 function check(){var now=dtl(new Date()),old=dtl(new Date(Date.now()-864e5)),hit=[],ch=false;S.rems.forEach(function(r){if(fired[r.id]||r.at>now)return;fired[r.id]=1;ch=true;if(r.at>=old)hit.push(r.text)});if(ch){try{localStorage.setItem('fam-fired',JSON.stringify(fired))}catch(e){}if(hit.length)banner(hit.map(esc).join('、')+' の時間です');render()}}
+function mkRems(id,d,tm,title,sh){var now=dtl(new Date()),dd=new Date(d+'T00:00');dd.setDate(dd.getDate()-1);var L=[[ymd(dd)+'T21:00','明日：'+title]];if(tm){L.push([dtl(new Date(new Date(d+'T'+tm).getTime()-3600000)),'1時間後：'+title])}else{L.push([d+'T08:00','今日：'+title])}L.forEach(function(x){if(x[0]>now)addDoc(sh?C('rems'):U('rems'),{text:x[1],at:x[0],ts:Date.now(),evId:id})})}
+function sendChat(){var v=$('i-chat').value.trim();if(!v||!auth.currentUser)return;addDoc(C('chat'),{text:v,who:((auth.currentUser.displayName||'家族').split(/\s+/)[0]).slice(0,6),uid:auth.currentUser.uid,ts:Date.now()});$('i-chat').value=''}
 function stop(){unsubs.forEach(function(u){u()});unsubs=[]}
 function denied(){stop();signOut(auth).then(function(){err('lmsg','このGoogleアカウントは許可されていません。')})}
-function lc(ref,key,priv){return onSnapshot(ref,function(sn){S[key]=sn.docs.map(function(d){return Object.assign({id:d.id,_p:priv},d.data())});if(key==='todS'||key==='todP')S.todos=S.todS.concat(S.todP).sort(function(a,b){return (b.ts||0)-(a.ts||0)});if(key==='memS'||key==='memP')S.memos=S.memS.concat(S.memP).sort(function(a,b){return (b.ts||0)-(a.ts||0)});if(key==='evS'||key==='evP')S.events=S.evS.concat(S.evP);render();if(key==='rems')check()},function(e){if(e.code==='permission-denied'){if(priv)banner('Firebaseのルールを更新してください');else denied()}})}
-function listen(){stop();unsubs=[lc(C('todos'),'todS',0),lc(U('todos'),'todP',1),lc(C('rems'),'rems',0),lc(C('events'),'evS',0),lc(U('events'),'evP',1),lc(C('memos'),'memS',0),lc(U('memos'),'memP',1)]}
+function lc(ref,key,priv){return onSnapshot(ref,function(sn){S[key]=sn.docs.map(function(d){return Object.assign({id:d.id,_p:priv},d.data())});if(key==='todS'||key==='todP')S.todos=S.todS.concat(S.todP).sort(function(a,b){return (b.ts||0)-(a.ts||0)});if(key==='memS'||key==='memP')S.memos=S.memS.concat(S.memP).sort(function(a,b){return (b.ts||0)-(a.ts||0)});if(key==='evS'||key==='evP')S.events=S.evS.concat(S.evP);if(key==='remS'||key==='remP')S.rems=S.remS.concat(S.remP);if(key==='chat')S.chat.reverse();render();if(key==='chat'&&curTab==='chat')window.scrollTo(0,document.body.scrollHeight);if(key==='remS'||key==='remP')check()},function(e){if(e.code==='permission-denied'){if(priv)banner('Firebaseのルールを更新してください');else denied()}})}
+function listen(){stop();unsubs=[lc(C('todos'),'todS',0),lc(U('todos'),'todP',1),lc(C('rems'),'remS',0),lc(U('rems'),'remP',1),lc(query(C('chat'),orderBy('ts','desc'),limit(100)),'chat',0),lc(C('events'),'evS',0),lc(U('events'),'evP',1),lc(C('memos'),'memS',0),lc(U('memos'),'memP',1)]}
 function localData(){try{return JSON.parse(localStorage.getItem('fam-app-v1')||'null')}catch(e){return null}}
 function showImport(){var o=localData(),n=0;if(o)KS.forEach(function(k){n+=(o[k]||[]).length});$('imp').style.display=(n&&!localStorage.getItem('fam-app-imported'))?'block':'none'}
 function importLocal(){var o=localData();if(!o)return;var b=writeBatch(db),now=Date.now();
@@ -147,10 +161,11 @@ function importLocal(){var o=localData();if(!o)return;var b=writeBatch(db),now=D
 function login(){err('lmsg','');signInWithPopup(auth,new GoogleAuthProvider()).catch(function(e){err('lmsg','ログインできませんでした（'+(e.code||'')+'）')})}
 function logout(){stop();signOut(auth)}
 function refreshApp(){fetch(location.pathname,{cache:'reload'}).catch(function(){}).then(function(){location.reload()})}
-Object.assign(window,{show:show,dl:dl,tg:tg,addTodo:addTodo,addEvent:addEvent,addRem:addRem,addMemo:addMemo,setCol:setCol,importLocal:importLocal,login:login,logout:logout,refreshApp:refreshApp});
+Object.assign(window,{sendChat:sendChat,show:show,dl:dl,tg:tg,addTodo:addTodo,addEvent:addEvent,addRem:addRem,addMemo:addMemo,setCol:setCol,importLocal:importLocal,login:login,logout:logout,refreshApp:refreshApp});
 $('i-date').value=ymd(new Date());
 $('i-rat').value=dtl(new Date(Date.now()+3600000));
 drawDots();
+$('i-chat').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.isComposing){e.preventDefault();sendChat()}});
 var tab='todo';try{tab=localStorage.getItem('fam-app-tab')||'todo'}catch(e){}
 show(TT[tab]?tab:'todo');render();
 onAuthStateChanged(auth,function(u){
