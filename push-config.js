@@ -1,1 +1,1 @@
-window.PUSH_VAPID='';
+window.PUSH_VAPID='BJesjQrvorWkxZQPBJownu1RqcGNalpcXRwR5i8P9W0DeYMHInd4h2-UAtQ2U6s-YAym4MtRKI7zHiObiHE7imQ';
