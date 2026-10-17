@@ -1,0 +1,1 @@
+window.PUSH_VAPID='';
