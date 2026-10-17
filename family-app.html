@@ -182,8 +182,9 @@ function show(n){if(!TT[n])n='today';curTab=n;rxOpen=null;if(n==='chat')markRead
 document.addEventListener('input',function(){['e-todo','e-event','e-rem','e-memo','e-goal'].forEach(function(e){err(e,'')})});
 function dl(k,i){var x=S[k][i];if(!x)return;if(k==='events')S.rems.forEach(function(r){if(r.evId===x.id)deleteDoc(r._p?UD('rems',r.id):D('rems',r.id))});deleteDoc(x._p?UD(k,x.id):D(k,x.id))}
 function xb(k,i){return '<button class="x" aria-label="削除" onclick="dl(\''+k+'\','+i+')">×</button>'}
+function tb(x){return x._p?'<span class="who">自分のみ</span>':(x.who?'<span class="badge">'+esc(x.who)+'</span>':'')}
 function tg(i){var x=S.todos[i];if(x)updateDoc(x._p?UD('todos',x.id):D('todos',x.id),{d:!x.d})}
-function addTodo(){var v=$('i-todo').value.trim();if(!v){err('e-todo','内容を入力してください');return}addDoc($('i-tshare').checked?C('todos'):U('todos'),{t:v,d:false,ts:Date.now()});$('i-todo').value=''}
+function addTodo(){var v=$('i-todo').value.trim();if(!v){err('e-todo','内容を入力してください');return}addDoc($('i-tshare').checked?C('todos'):U('todos'),{t:v,d:false,who:myName(),uid:myId(),ts:Date.now()});$('i-todo').value=''}
 
 /* ---- 色 ---- */
 function setCol(c){col=c;drawDots()}
@@ -246,12 +247,12 @@ function rToday(){
  var rm=todayRems();
  if(rm.length){any=true;h+='<p class="h">今日のリマインド</p>'+rm.map(function(o){var r=o.r;return trow(null,esc(r.text),(r.allday?'終日':r.at.slice(11))+(fired[r.id]?'　通知済み':''),'')}).join('')}
  var tds=S.todos.map(function(x,i){return {x:x,i:i}}).filter(function(o){return !o.x.d});
- if(tds.length){any=true;h+='<p class="h">TODO（'+tds.length+'件）</p>'+tds.slice(0,5).map(function(o){return '<div class="item"><input type="checkbox" aria-label="完了" onchange="tg('+o.i+')" style="width:22px;height:22px;flex:none"><span class="t">'+esc(o.x.t)+'</span>'+(o.x._p?'<span class="who">自分のみ</span>':'')+'</div>'}).join('')+(tds.length>5?'<p class="sub">ほか'+(tds.length-5)+'件</p>':'')}
+ if(tds.length){any=true;h+='<p class="h">TODO（'+tds.length+'件）</p>'+tds.slice(0,5).map(function(o){return '<div class="item"><input type="checkbox" aria-label="完了" onchange="tg('+o.i+')" style="width:22px;height:22px;flex:none"><span class="t">'+esc(o.x.t)+'</span>'+tb(o.x)+'</div>'}).join('')+(tds.length>5?'<p class="sub">ほか'+(tds.length-5)+'件</p>':'')}
  var gl=S.goalP.filter(function(g){return g.kind==='long'&&!g.d}).sort(function(a,b){return (a.ts||0)-(b.ts||0)});
  if(gl.length){any=true;h+='<p class="h">やるべきこと</p>'+gl.map(function(L){var kids=kidsOf(L.id),dn=kids.filter(function(k){return k.d}).length;return '<div class="gcard" style="--gc:'+hex(L.color,'#B5531F')+';padding-bottom:10px"><div class="gt">'+esc(L.t)+'</div>'+prog(dn,kids.length)+'</div>'}).join('')}
  if(!any)h+=empty('今日は何もないにゃ。のんびりしてね');
  $('l-today').innerHTML=h}
-function rTodo(){$('l-todo').innerHTML=S.todos.length?S.todos.map(function(x,i){return '<div class="item"><input type="checkbox" '+(x.d?'checked':'')+' onchange="tg('+i+')" style="width:22px;height:22px;flex:none"><span class="t '+(x.d?'done':'')+'">'+esc(x.t)+'</span>'+(x._p?'<span class="who">自分のみ</span>':'')+xb('todos',i)+'</div>'}).join(''):empty('TODOはまだないにゃ')}
+function rTodo(){$('l-todo').innerHTML=S.todos.length?S.todos.map(function(x,i){return '<div class="item"><input type="checkbox" '+(x.d?'checked':'')+' onchange="tg('+i+')" style="width:22px;height:22px;flex:none"><span class="t '+(x.d?'done':'')+'">'+esc(x.t)+'</span>'+tb(x)+xb('todos',i)+'</div>'}).join(''):empty('TODOはまだないにゃ')}
 function rGoal(){
  var G=S.goalP,longs=G.filter(function(g){return g.kind==='long'}).sort(function(a,b){return ((a.d?1:0)-(b.d?1:0))||((a.ts||0)-(b.ts||0))});
  var h=longs.map(function(L){
