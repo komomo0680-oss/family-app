@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>小西家</title>
+<style>
+:root{--bg:#fff8f0;--card:#fff;--tx:#2b2520;--tx2:#74685d;--bd:#f0dfcc;--ac:#B5531F;--acfg:#fff;--acx:#8F3E12;--acbg:#FFE9D6;--dg:#B3261E;--wnbg:#FFF0C9;--wn:#5C3D00;--r:14px;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1f1b18;--card:#2a2521;--tx:#f5ece2;--tx2:#bdae9f;--bd:#40372f;--ac:#FFB27A;--acfg:#2a1608;--acx:#FFB27A;--acbg:#4a2f1d;--dg:#ffb4ab;--wnbg:#4d3a0b;--wn:#ffe08a}}
+:root[data-theme="dark"]{--bg:#1f1b18;--card:#2a2521;--tx:#f5ece2;--tx2:#bdae9f;--bd:#40372f;--ac:#FFB27A;--acfg:#2a1608;--acx:#FFB27A;--acbg:#4a2f1d;--dg:#ffb4ab;--wnbg:#4d3a0b;--wn:#ffe08a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",Meiryo,system-ui,sans-serif;font-size:16px;line-height:1.6;-webkit-text-size-adjust:100%}
+main{max-width:560px;margin:0 auto;padding:16px 16px 110px}
+h1{font-size:19px;font-weight:600;margin:0 0 14px}
+input,textarea,button,select{font:inherit;color:var(--tx)}
+input,textarea,select{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 12px;min-width:0;box-sizing:border-box}
+input[type=checkbox]{accent-color:var(--ac);padding:0}
+button{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 16px;cursor:pointer}
+.row{display:flex;gap:8px;margin-bottom:8px}
+.row>input,.row>textarea,.row>select{flex:1}
+.pri{background:var(--ac);color:var(--acfg);border-color:var(--ac);font-weight:600}
+.item{display:flex;align-items:center;gap:10px;padding:12px 14px;margin-bottom:8px;background:var(--card);border:1px solid var(--bd);border-radius:var(--r)}
+.item.sp{background:var(--acbg);border-color:var(--ac)}
+.t{flex:1;min-width:0;word-break:break-word}
+.sub{font-size:14px;color:var(--tx2);margin:0}
+.err{font-size:14px;color:var(--dg);margin:0 0 8px}
+.x{border:none;background:none;color:var(--tx2);padding:4px 8px;font-size:22px;line-height:1;min-width:40px;min-height:40px}
+.done{text-decoration:line-through;color:var(--tx2)}
+.badge{font-size:12px;padding:2px 10px;border-radius:999px;background:var(--acbg);color:var(--acx);white-space:nowrap}
+.who{font-size:12px;padding:2px 10px;border-radius:999px;border:1px solid var(--bd);color:var(--tx2);white-space:nowrap}
+.h{font-size:14px;font-weight:600;color:var(--tx2);margin:20px 0 8px}
+#banner{display:none;background:var(--wnbg);color:var(--wn);border-radius:var(--r);padding:12px 14px;margin-bottom:12px}
+.dots{display:flex;gap:10px;margin-bottom:8px;align-items:center;flex-wrap:wrap}
+.dot{width:32px;height:32px;border-radius:50%;padding:0;min-height:0;border:3px solid transparent}
+.dot.on{border-color:var(--tx)}
+.bar{width:5px;align-self:stretch;border-radius:3px;flex:none}
+.login{max-width:560px;margin:0 auto;padding:80px 16px;text-align:center}
+.login h1{font-size:28px;margin-bottom:24px}
+.msg{max-width:80%;padding:8px 14px;border-radius:16px;margin:2px 0;background:var(--card);border:1px solid var(--bd);word-break:break-word;white-space:pre-wrap}
+.msg.me{background:var(--acbg)}
+.nb{position:absolute;top:0;right:2px;display:flex;align-items:center;gap:1px;background:var(--card);border:1px solid var(--ac);border-radius:10px;padding:0 6px 0 1px;font-size:11px;color:var(--tx);line-height:1.5}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding:4px 2px calc(4px + env(safe-area-inset-bottom,0px))}
+nav button{flex:1 1 0;min-width:0;border:none;background:none;padding:4px 0 6px;font-size:min(11.5px,2.9vw);color:var(--tx2);position:relative;white-space:nowrap;border-radius:10px;margin:0 1px;overflow:visible}
+nav button::before{content:"";display:block;width:12px;height:12px;margin:0 auto 1px;opacity:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='%23E0803F'%3E%3Cellipse cx='50' cy='66' rx='24' ry='20'/%3E%3Cellipse cx='18' cy='44' rx='9' ry='12'/%3E%3Cellipse cx='37' cy='24' rx='9' ry='12'/%3E%3Cellipse cx='63' cy='24' rx='9' ry='12'/%3E%3Cellipse cx='82' cy='44' rx='9' ry='12'/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat}
+nav button.on{color:var(--acx);font-weight:600;background:var(--acbg)}
+nav button.on::before{opacity:1}
+.seg{display:flex;gap:6px;margin-bottom:8px}
+.seg button{flex:1}
+.seg button.on{background:var(--acbg);border-color:var(--ac);color:var(--acx);font-weight:600}
+.gcard{--gc:var(--ac);background:var(--card);border:1px solid var(--bd);border-left:8px solid var(--gc);border-radius:var(--r);padding:12px 8px 6px 12px;margin-bottom:12px}
+.ghead{display:flex;align-items:center;gap:10px;padding-bottom:6px}
+.gt{font-weight:600}
+.srow{display:flex;align-items:center;gap:10px;padding:4px 0 4px 6px;border-top:1px dashed var(--bd)}
+.prog{display:flex;align-items:center;gap:3px;flex-wrap:wrap;margin-top:2px}
+.pw{color:var(--gc);opacity:.28}
+.pw.on{opacity:1}
+.pbar{flex:1;min-width:80px;height:10px;border-radius:6px;background:var(--bd);overflow:hidden;margin-right:6px}
+.pbar i{display:block;height:100%;background:var(--gc)}
+.empty{text-align:center;color:var(--tx2);padding:24px 0}
+.empty svg{display:block;margin:0 auto 8px}
+details>summary{cursor:pointer;padding:6px 0}
+.rx{display:flex;gap:4px;flex-wrap:wrap;margin-top:2px}
+.rx button{padding:0 10px;min-height:30px;border-radius:999px;font-size:14px;line-height:1.2}
+.rx button.me{background:var(--acbg);border-color:var(--ac)}
+.rx button.add{border-color:transparent;background:none;color:var(--tx2)}
+.rxp{display:flex;gap:6px;margin-top:4px}
+.rxp button{font-size:20px;padding:2px 10px;min-height:40px}
+.cel{position:fixed;inset:0;z-index:50;pointer-events:none;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.celc{background:var(--card);border:2px solid var(--ac);border-radius:24px;padding:16px 32px;text-align:center;font-weight:600;animation:pop .45s ease-out}
+.celc p{margin:4px 0 0}
+.cp{position:absolute;top:-40px;animation:fall 2s ease-in forwards}
+@keyframes fall{to{transform:translateY(115vh) rotate(360deg)}}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){.cp,.celc{animation:none}}
+</style><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#fff8f0"><link rel="icon" type="image/png" href="data:image/png;base64,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">
+<link rel="apple-touch-icon" href="data:image/png;base64,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">
+</head><body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="cat" viewBox="0 0 100 100"><defs><clipPath id="catclip"><ellipse cx="50" cy="58" rx="36" ry="31"/></clipPath></defs><path d="M73 82C90 84 95 66 86 60" fill="none" stroke="#6B4A3A" stroke-width="9" stroke-linecap="round"/><path d="M73 82C90 84 95 66 86 60" fill="none" stroke="#F3B578" stroke-width="4.2" stroke-linecap="round"/><ellipse cx="36" cy="88" rx="9" ry="5.5" fill="#FFFDF9" stroke="#6B4A3A" stroke-width="3"/><ellipse cx="64" cy="88" rx="9" ry="5.5" fill="#FFFDF9" stroke="#6B4A3A" stroke-width="3"/><path d="M20 42L23 13Q24 11 26 12L47 27Z" fill="#F3B578" stroke="#6B4A3A" stroke-width="3" stroke-linejoin="round"/><path d="M80 42L77 13Q76 11 74 12L53 27Z" fill="#FFFDF9" stroke="#6B4A3A" stroke-width="3" stroke-linejoin="round"/><path d="M26 31L27 20L37 27Z" fill="#F7B6B0"/><path d="M74 31L73 20L63 27Z" fill="#F7B6B0"/><ellipse cx="50" cy="58" rx="36" ry="31" fill="#FFFDF9"/><g clip-path="url(#catclip)"><ellipse cx="31" cy="36" rx="19" ry="13" fill="#F3B578"/><ellipse cx="73" cy="47" rx="13" ry="11" fill="#B89A86"/><ellipse cx="62" cy="86" rx="10" ry="8" fill="#F3B578"/></g><ellipse cx="50" cy="58" rx="36" ry="31" fill="none" stroke="#6B4A3A" stroke-width="3.2"/><path d="M32 55Q37 60 42 55" fill="none" stroke="#6B4A3A" stroke-width="3" stroke-linecap="round"/><path d="M58 55Q63 60 68 55" fill="none" stroke="#6B4A3A" stroke-width="3" stroke-linecap="round"/><ellipse cx="27" cy="64" rx="6.5" ry="4.2" fill="#F29C9C" opacity=".7"/><ellipse cx="73" cy="64" rx="6.5" ry="4.2" fill="#F29C9C" opacity=".7"/><path d="M47.5 61.5H52.5L50 64.5Z" fill="#E58A8A" stroke="#E58A8A" stroke-width="1.2" stroke-linejoin="round"/><path d="M50 64.5Q47 69 43 66.5M50 64.5Q53 69 57 66.5" fill="none" stroke="#6B4A3A" stroke-width="2.4" stroke-linecap="round"/><path d="M17 58L8 55.5M17 63.5L9 65M83 58L92 55.5M83 63.5L91 65" fill="none" stroke="#6B4A3A" stroke-width="2" stroke-linecap="round"/></symbol></svg>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="paw" viewBox="0 0 100 100"><g fill="currentColor"><ellipse cx="50" cy="66" rx="24" ry="20"/><ellipse cx="18" cy="44" rx="9" ry="12" transform="rotate(-20 18 44)"/><ellipse cx="37" cy="24" rx="9" ry="12"/><ellipse cx="63" cy="24" rx="9" ry="12"/><ellipse cx="82" cy="44" rx="9" ry="12" transform="rotate(20 82 44)"/></g></symbol></svg>
+<div id="login" class="login" style="display:none">
+<svg width="120" height="120" style="display:block;margin:0 auto 12px"><use href="#cat"/></svg>
+<h1>小西家</h1>
+<button class="pri" onclick="login()">Googleでログイン</button>
+<p class="err" id="lmsg" style="margin-top:16px"></p>
+</div>
+<main id="app" style="display:none">
+<h1 style="display:flex;align-items:center;gap:10px"><svg width="34" height="34" style="flex:none"><use href="#cat"/></svg><span id="ttl">今日</span></h1>
+<div id="banner"></div>
+
+<section id="s-today">
+<div id="l-today"></div>
+</section>
+
+<section id="s-todo">
+<p class="sub" style="margin-bottom:8px">ふだんは家族みんなに見えます。「家族と共有する」を外すと、自分だけのTODOになります。</p>
+<div class="row"><input id="i-todo" placeholder="牛乳を買う"><button class="pri" onclick="addTodo()">追加</button></div>
+<div class="row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="i-tshare" checked style="width:20px;height:20px"> 家族と共有する</label></div>
+<p class="err" id="e-todo"></p><div id="l-todo"></div>
+</section>
+
+<section id="s-goal">
+<p class="sub" style="margin-bottom:8px">自分だけに見える目標です。長期目標の下に、短期目標を入れていけます。</p>
+<div class="seg" id="g-seg"></div>
+<div class="row" id="g-parent"><select id="i-gparent" aria-label="どの長期目標の下に入れるか"></select></div>
+<div class="row"><input id="i-goal" placeholder=""><button class="pri" onclick="addGoal()">追加</button></div>
+<div class="dots" id="gdots"></div>
+<p class="err" id="e-goal"></p><div id="l-goal"></div>
+</section>
+
+<section id="s-event">
+<div class="row"><input id="i-date" type="date"><input id="i-time" type="time" style="width:120px;flex:none"></div>
+<div class="row"><input id="i-etitle" placeholder="歯医者"><input id="i-who" value="家族" style="width:90px;flex:none"></div>
+<div class="row"><input id="i-note" placeholder="一言メモ（任意）"></div>
+<div class="row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="i-share" checked style="width:20px;height:20px"> 家族と共有する</label></div>
+<div class="row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="i-auto" checked style="width:20px;height:20px"> 前日の夜と直前に通知する</label></div>
+<div class="row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="i-special" style="width:20px;height:20px"> 🎂 誕生日・記念日（毎年表示する）</label></div>
+<div class="dots" id="dots"></div>
+<div class="row"><button class="pri" style="flex:1" onclick="addEvent()">予定を追加</button></div>
+<p class="err" id="e-event"></p><div id="l-event"></div>
+</section>
+
+<section id="s-rem">
+<div class="row"><input id="i-rtext" placeholder="薬を飲む"></div>
+<div class="row"><input id="i-rdate" type="date"><input id="i-rtime" type="time" style="width:120px;flex:none"></div>
+<div class="row"><button class="pri" style="flex:1" onclick="addRem()">追加</button></div>
+<p class="sub" style="margin-bottom:8px">自分だけのリマインドです。時間を入れないと「終日」になり、朝8時に通知します。</p>
+<p class="err" id="e-rem"></p><div id="l-rem"></div>
+<p class="sub" style="margin-top:12px">今日の分だけ表示します。このページを開いている間、時間になると上にお知らせが出ます。</p>
+</section>
+
+<section id="s-memo">
+<p class="sub" style="margin-bottom:8px">ふだんは自分だけに見えます。「家族と共有する」にチェックすると、家族にも名前つきで見えます。</p>
+<div class="row"><textarea id="i-memo" rows="3" placeholder="メモを書く"></textarea></div>
+<div class="row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="i-mshare" style="width:20px;height:20px"> 家族と共有する</label></div>
+<div class="row"><button class="pri" style="flex:1" onclick="addMemo()">メモを保存</button></div>
+<p class="err" id="e-memo"></p><div id="l-memo"></div>
+</section>
+
+<section id="s-chat">
+<div id="l-chat" style="min-height:40vh"></div>
+<div class="row" style="margin-top:12px"><input id="i-chat" placeholder="メッセージ"><button class="pri" onclick="sendChat()">送信</button></div>
+</section>
+
+<p id="imp" style="display:none;text-align:center;margin-top:24px"><button onclick="importLocal()">この端末の古いデータを共有に取り込む</button></p>
+<div id="pushbox" style="margin-top:24px"></div>
+<p style="text-align:center;margin-top:24px"><button onclick="refreshApp()">最新の画面に更新</button> <button onclick="logout()">ログアウト</button></p>
+</main>
+<nav id="nav" style="display:none">
+<button id="n-today" onclick="show('today')">今日</button>
+<button id="n-todo" onclick="show('todo')">TODO</button>
+<button id="n-goal" onclick="show('goal')">目標</button>
+<button id="n-event" onclick="show('event')">予定</button>
+<button id="n-rem" onclick="show('rem')">リマインド</button>
+<button id="n-memo" onclick="show('memo')">メモ</button>
+<button id="n-chat" onclick="show('chat')">チャット</button>
+</nav>
+<script src="push-config.js"></script>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {getAuth,onAuthStateChanged,signInWithPopup,GoogleAuthProvider,signOut} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {initializeFirestore,getFirestore,persistentLocalCache,collection,doc,addDoc,updateDoc,deleteDoc,deleteField,setDoc,onSnapshot,writeBatch,query,orderBy,limit} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+var app=initializeApp({apiKey:"AIzaSyDXpUCPANQpTppk1dhOY3B4sENz-7bw08k",authDomain:"family-app-438a1.firebaseapp.com",projectId:"family-app-438a1",storageBucket:"family-app-438a1.firebasestorage.app",messagingSenderId:"793853520735",appId:"1:793853520735:web:bf16ccfeecee2fcd76a4ea"});
+var auth=getAuth(app),db;
+try{db=initializeFirestore(app,{localCache:persistentLocalCache()})}catch(e){db=getFirestore(app)}
+function C(k){return collection(db,'families','main',k)}
+function D(k,id){return doc(db,'families','main',k,id)}
+function U(k){return collection(db,'users',auth.currentUser.uid,k)}
+function UD(k,id){return doc(db,'users',auth.currentUser.uid,k,id)}
+var $=function(i){return document.getElementById(i)};
+var W=['日','月','火','水','木','金','土'],TT={today:'今日',todo:'TODO',goal:'やるべきこと',event:'予定',rem:'リマインド',memo:'メモ',chat:'チャット'},KS=['todos','events','rems','memos'],TABS=['today','todo','goal','event','rem','memo','chat'];
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function p2(n){return String(n).padStart(2,'0')}
+function ymd(d){return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())}
+function dtl(d){return ymd(d)+'T'+p2(d.getHours())+':'+p2(d.getMinutes())}
+function label(s){var d=new Date(s+'T00:00');return (d.getMonth()+1)+'月'+d.getDate()+'日（'+W[d.getDay()]+'）'}
+function hex(c,f){return /^#[0-9a-f]{6}$/i.test(c||'')?c:f}
+var S={todos:[],events:[],rems:[],memos:[],evS:[],evP:[],memS:[],memP:[],todS:[],todP:[],chat:[],remS:[],remP:[],goalP:[]},curTab='today',unsubs=[],fired={},rxOpen=null,futOpen=false,lastChatId='';
+try{fired=JSON.parse(localStorage.getItem('fam-fired')||'{}')}catch(e){}
+var GCOLORS=['#E8856A','#F0B340','#7BBF8E','#6BAED6','#B493D8','#E58FB0'],col=GCOLORS[0],gkind='long',gcol=null,RX=['👍','❤️','😂','🙏','🐾'];
+function err(id,m){$(id).textContent=m}
+function banner(h){var b=$('banner');b.style.display='block';b.innerHTML=h+' <button class="x" aria-label="閉じる" onclick="this.parentNode.style.display=\'none\'" style="float:right;padding:0 4px;min-width:0;min-height:0;color:inherit">×</button>'}
+function myName(){var u=auth.currentUser;return ((u&&u.displayName||'家族').split(/\s+/)[0]).slice(0,6)}
+function empty(m){return '<div class="empty"><svg width="56" height="56"><use href="#cat"/></svg>'+m+'</div>'}
+function navCenter(n){var b=$('n-'+n),nv=$('nav');if(!b||!nv||!nv.clientWidth)return;nv.scrollTo({left:b.offsetLeft-(nv.clientWidth-b.offsetWidth)/2,behavior:'smooth'})}
+function show(n){if(!TT[n])n='today';curTab=n;rxOpen=null;if(n==='chat')markRead();if(n==='chat')setTimeout(function(){window.scrollTo(0,document.body.scrollHeight)},50);TABS.forEach(function(k){$('s-'+k).style.display=k===n?'block':'none';$('n-'+k).className=k===n?'on':''});$('ttl').textContent='小西家 ｜ '+TT[n];try{localStorage.setItem('fam-app-tab',n)}catch(e){}navCenter(n)}
+document.addEventListener('input',function(){['e-todo','e-event','e-rem','e-memo','e-goal'].forEach(function(e){err(e,'')})});
+function dl(k,i){var x=S[k][i];if(!x)return;if(k==='events')S.rems.forEach(function(r){if(r.evId===x.id)deleteDoc(r._p?UD('rems',r.id):D('rems',r.id))});deleteDoc(x._p?UD(k,x.id):D(k,x.id))}
+function xb(k,i){return '<button class="x" aria-label="削除" onclick="dl(\''+k+'\','+i+')">×</button>'}
+function tb(x){return x._p?'<span class="who">自分のみ</span>':(x.who?'<span class="badge">'+esc(x.who)+'</span>':'')}
+function tg(i){var x=S.todos[i];if(x)updateDoc(x._p?UD('todos',x.id):D('todos',x.id),{d:!x.d})}
+function addTodo(){var v=$('i-todo').value.trim();if(!v){err('e-todo','内容を入力してください');return}addDoc($('i-tshare').checked?C('todos'):U('todos'),{t:v,d:false,who:myName(),uid:myId(),ts:Date.now()});$('i-todo').value=''}
+
+/* ---- 色 ---- */
+function setCol(c){col=c;drawDots()}
+function drawDots(){$('dots').innerHTML=GCOLORS.map(function(c,i){return '<button class="dot'+(c===col?' on':'')+'" style="background:'+c+'" aria-label="色'+(i+1)+'" onclick="setCol(\''+c+'\')"></button>'}).join('')}
+
+/* ---- やるべきこと（自分だけ） ---- */
+function nextCol(){var used=S.goalP.filter(function(g){return g.kind==='long'}).map(function(g){return g.color});for(var i=0;i<GCOLORS.length;i++)if(used.indexOf(GCOLORS[i])<0)return GCOLORS[i];return GCOLORS[S.goalP.length%GCOLORS.length]}
+function setGKind(k){gkind=k;drawGForm()}
+function setGCol(c){gcol=c;drawGForm()}
+function drawGForm(){
+ $('g-seg').innerHTML=[['long','長期目標'],['short','短期目標']].map(function(p){return '<button class="'+(gkind===p[0]?'on':'')+'" onclick="setGKind(\''+p[0]+'\')">'+p[1]+'</button>'}).join('');
+ var L=gkind==='long';
+ $('g-parent').style.display=L?'none':'flex';
+ $('gdots').style.display=L?'flex':'none';
+ $('i-goal').placeholder=L?'例：英語で日常会話ができる':'例：毎日10分、単語を覚える';
+ if(L){if(!gcol)gcol=nextCol();$('gdots').innerHTML=GCOLORS.map(function(c,i){return '<button class="dot'+(c===gcol?' on':'')+'" style="background:'+c+'" aria-label="色'+(i+1)+'" onclick="setGCol(\''+c+'\')"></button>'}).join('')}
+}
+function addGoal(){var v=$('i-goal').value.trim();if(!v){err('e-goal','内容を入力してください');return}
+ if(gkind==='long'){addDoc(U('goals'),{t:v,kind:'long',color:gcol||nextCol(),d:false,ts:Date.now()})}
+ else{var pid=$('i-gparent').value,p=S.goalP.filter(function(g){return g.id===pid&&g.kind==='long'})[0];if(!p){err('e-goal','先に長期目標を作って、どの下に入れるか選んでください');return}addDoc(U('goals'),{t:v,kind:'short',parent:pid,d:false,ts:Date.now()})}
+ $('i-goal').value='';gcol=null;drawGForm()}
+function kidsOf(id){return S.goalP.filter(function(g){return g.parent===id})}
+function gtg(id){var g=S.goalP.filter(function(x){return x.id===id})[0];if(!g)return;var nd=!g.d;updateDoc(UD('goals',id),{d:nd});if(nd&&g.kind==='long')celebrate()}
+function gdel(id){var g=S.goalP.filter(function(x){return x.id===id})[0];if(!g)return;var kids=g.kind==='long'?kidsOf(id):[];if(kids.length&&!confirm('この長期目標と、下の短期目標'+kids.length+'件を削除します。よろしいですか？'))return;var b=writeBatch(db);b.delete(UD('goals',id));kids.forEach(function(k){b.delete(UD('goals',k.id))});b.commit()}
+function prog(dn,tt){if(!tt)return '<p class="sub">短期目標はまだないにゃ</p>';var h='<div class="prog" aria-label="進み具合 '+dn+'/'+tt+'">';if(tt<=8){for(var i=0;i<tt;i++)h+='<svg class="pw'+(i<dn?' on':'')+'" width="20" height="20"><use href="#paw"/></svg>';h+='&nbsp;'}else{h+='<span class="pbar"><i style="width:'+Math.round(dn/tt*100)+'%"></i></span>'}return h+'<span class="sub">'+dn+'/'+tt+'</span></div>'}
+function celebrate(){
+ if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches){banner(CATI+'やったにゃ！長期目標を達成したにゃ');return}
+ var o=document.createElement('div');o.className='cel';
+ var h='<div class="celc"><svg width="96" height="96"><use href="#cat"/></svg><p>やったにゃ！</p></div>';
+ for(var i=0;i<16;i++){var s=18+Math.floor(Math.random()*14);h+='<svg class="cp" width="'+s+'" height="'+s+'" style="left:'+Math.floor(Math.random()*94)+'%;animation-delay:'+(Math.random()*.7).toFixed(2)+'s;color:'+GCOLORS[i%GCOLORS.length]+'"><use href="#paw"/></svg>'}
+ o.innerHTML=h;document.body.appendChild(o);setTimeout(function(){o.remove()},2400)}
+
+/* ---- 予定 ---- */
+function fixMD(y,md){if(md==='02-29'&&!(y%4===0&&(y%100!==0||y%400===0)))md='02-28';return y+'-'+md}
+function effDate(e){if(!e.yearly)return e.date;var td=ymd(new Date()),y=new Date().getFullYear(),md=e.date.slice(5),c=fixMD(y,md);if(c<td)c=fixMD(y+1,md);if(c<e.date)c=e.date;return c}
+function addEvent(){var d=$('i-date').value,t=$('i-etitle').value.trim();if(!d){err('e-event','日付を選んでください');return}if(!t){err('e-event','予定の内容を入力してください');return}var sh=$('i-share').checked,tm=$('i-time').value,sp=$('i-special').checked;addDoc(sh?C('events'):U('events'),{date:d,time:tm,title:t,who:$('i-who').value.trim()||'家族',note:$('i-note').value.trim(),color:col,special:sp,yearly:sp,ts:Date.now()}).then(function(ref){if($('i-auto').checked)mkRems(ref.id,d,tm,t,sh)});$('i-etitle').value='';$('i-note').value='';$('i-special').checked=false}
+
+/* ---- リマインド（自分だけ・当日のみ表示） ---- */
+function addRem(){var t=$('i-rtext').value.trim(),d=$('i-rdate').value,tm=$('i-rtime').value;if(!t){err('e-rem','内容を入力してください');return}if(!d){err('e-rem','日付を選んでください');return}addDoc(U('rems'),{text:t,at:d+'T'+(tm||'08:00'),allday:!tm,ts:Date.now()});$('i-rtext').value='';$('i-rtime').value=''}
+function remKey(r){return r.allday?'00:00':(r.at||'').slice(11)}
+function todayRems(){var td=ymd(new Date());return S.rems.map(function(r,i){return {r:r,i:i}}).filter(function(o){return (o.r.at||'').slice(0,10)===td}).sort(function(a,b){var x=remKey(a.r),y=remKey(b.r);return x<y?-1:(x>y?1:0)})}
+function remRow(o,withDate){var r=o.r,f=fired[r.id];return '<div class="item" style="'+(f?'opacity:.55':'')+'"><div class="t"><div>'+esc(r.text)+'</div><p class="sub">'+(withDate?label(r.at.slice(0,10))+' ':'')+(r.allday?'終日':r.at.slice(11))+(f?'　通知済み':'')+'</p></div>'+xb('rems',o.i)+'</div>'}
+function tglFut(el){futOpen=el.open}
+
+/* ---- メモ（共有は名前で表示） ---- */
+function addMemo(){var v=$('i-memo').value.trim();if(!v){err('e-memo','メモを入力してください');return}addDoc($('i-mshare').checked?C('memos'):U('memos'),{t:v,who:myName(),uid:myId(),ts:Date.now()});$('i-memo').value=''}
+
+/* ---- チャットの反応 ---- */
+function rxT(i){var c=S.chat[i];if(!c)return;rxOpen=rxOpen===c.id?null:c.id;render()}
+function rxS(i,e){var c=S.chat[i];if(!c)return;var me=myId(),cur=c.rx&&c.rx[me],f={};f['rx.'+me]=(cur===e)?deleteField():e;updateDoc(D('chat',c.id),f).catch(function(){banner('反応をつけられませんでした')});rxOpen=null;render()}
+
+/* ---- 画面 ---- */
+function rToday(){
+ var td=ymd(new Date()),h='<p class="sub" style="margin-bottom:4px">'+label(td)+'</p>',any=false;
+ function trow(bar,title,sub,extra){return '<div class="item">'+(bar?'<span class="bar" style="background:'+bar+'"></span>':'')+'<div class="t"><div>'+title+'</div>'+(sub?'<p class="sub">'+sub+'</p>':'')+'</div>'+(extra||'')+'</div>'}
+ var evs=S.events.map(function(e){return {e:e,d:effDate(e)}}).filter(function(o){return o.d===td}).sort(function(a,b){return (a.e.time||'')<(b.e.time||'')?-1:1});
+ if(evs.length){any=true;h+='<p class="h">今日の予定</p>'+evs.map(function(o){var e=o.e;return trow(hex(e.color,'var(--bd)'),(e.special?'🎂 ':'')+esc(e.title),(e.time||'終日')+(e.note?'　'+esc(e.note):''),'<span class="who">'+esc(e.who||'')+'</span>')}).join('')}
+ var soon=S.events.filter(function(e){return e.special}).map(function(e){var d=effDate(e);return {e:e,d:d,n:Math.round((new Date(d+'T00:00')-new Date(td+'T00:00'))/864e5)}}).filter(function(o){return o.n>0&&o.n<=14}).sort(function(a,b){return a.n-b.n});
+ if(soon.length){any=true;h+='<p class="h">もうすぐ</p>'+soon.map(function(o){return trow(null,'🎂 '+esc(o.e.title),label(o.d),'<span class="badge">あと'+o.n+'日</span>')}).join('')}
+ var rm=todayRems();
+ if(rm.length){any=true;h+='<p class="h">今日のリマインド</p>'+rm.map(function(o){var r=o.r;return trow(null,esc(r.text),(r.allday?'終日':r.at.slice(11))+(fired[r.id]?'　通知済み':''),'')}).join('')}
+ var tds=S.todos.map(function(x,i){return {x:x,i:i}}).filter(function(o){return !o.x.d});
+ if(tds.length){any=true;h+='<p class="h">TODO（'+tds.length+'件）</p>'+tds.slice(0,5).map(function(o){return '<div class="item"><input type="checkbox" aria-label="完了" onchange="tg('+o.i+')" style="width:22px;height:22px;flex:none"><span class="t">'+esc(o.x.t)+'</span>'+tb(o.x)+'</div>'}).join('')+(tds.length>5?'<p class="sub">ほか'+(tds.length-5)+'件</p>':'')}
+ var gl=S.goalP.filter(function(g){return g.kind==='long'&&!g.d}).sort(function(a,b){return (a.ts||0)-(b.ts||0)});
+ if(gl.length){any=true;h+='<p class="h">やるべきこと</p>'+gl.map(function(L){var kids=kidsOf(L.id),dn=kids.filter(function(k){return k.d}).length;return '<div class="gcard" style="--gc:'+hex(L.color,'#B5531F')+';padding-bottom:10px"><div class="gt">'+esc(L.t)+'</div>'+prog(dn,kids.length)+'</div>'}).join('')}
+ if(!any)h+=empty('今日は何もないにゃ。のんびりしてね');
+ $('l-today').innerHTML=h}
+function rTodo(){$('l-todo').innerHTML=S.todos.length?S.todos.map(function(x,i){return '<div class="item"><input type="checkbox" '+(x.d?'checked':'')+' onchange="tg('+i+')" style="width:22px;height:22px;flex:none"><span class="t '+(x.d?'done':'')+'">'+esc(x.t)+'</span>'+tb(x)+xb('todos',i)+'</div>'}).join(''):empty('TODOはまだないにゃ')}
+function rGoal(){
+ var G=S.goalP,longs=G.filter(function(g){return g.kind==='long'}).sort(function(a,b){return ((a.d?1:0)-(b.d?1:0))||((a.ts||0)-(b.ts||0))});
+ var h=longs.map(function(L){
+  var kids=kidsOf(L.id).sort(function(a,b){return ((a.d?1:0)-(b.d?1:0))||((a.ts||0)-(b.ts||0))}),dn=kids.filter(function(k){return k.d}).length,id=esc(L.id);
+  var s='<div class="gcard" style="--gc:'+hex(L.color,'#B5531F')+'"><div class="ghead"><input type="checkbox" aria-label="長期目標を完了" '+(L.d?'checked':'')+' onchange="gtg(\''+id+'\')" style="width:24px;height:24px;flex:none"><div class="t"><div class="gt'+(L.d?' done':'')+'">'+esc(L.t)+'</div>'+(L.d?'<p class="sub">達成したにゃ！</p>':prog(dn,kids.length)+(kids.length&&dn===kids.length?'<p class="sub">短期目標がぜんぶ終わったにゃ。長期目標も完了にしてみよう</p>':''))+'</div><button class="x" aria-label="削除" onclick="gdel(\''+id+'\')">×</button></div>';
+  if(!L.d)s+=kids.map(function(k){var kid=esc(k.id);return '<div class="srow"><input type="checkbox" aria-label="短期目標を完了" '+(k.d?'checked':'')+' onchange="gtg(\''+kid+'\')" style="width:22px;height:22px;flex:none"><span class="t'+(k.d?' done':'')+'">'+esc(k.t)+'</span><button class="x" aria-label="削除" onclick="gdel(\''+kid+'\')">×</button></div>'}).join('');
+  return s+'</div>'}).join('');
+ $('l-goal').innerHTML=h||empty('まだ目標がないにゃ');
+ var sel=$('i-gparent'),prev=sel.value,open=longs.filter(function(l){return !l.d});
+ sel.innerHTML=open.length?open.map(function(l){return '<option value="'+esc(l.id)+'">'+esc(l.t)+'</option>'}).join(''):'<option value="">（先に長期目標を作ってください）</option>';
+ if(prev&&open.some(function(l){return l.id===prev}))sel.value=prev;
+ drawGForm()}
+function rEvent(){
+ var td=ymd(new Date());
+ var idx=S.events.map(function(e,i){return {e:e,i:i,d:effDate(e)}}).sort(function(a,b){return (a.d+(a.e.time||''))<(b.d+(b.e.time||''))?-1:1});
+ var up=idx.filter(function(o){return o.d>=td}),past=idx.filter(function(o){return o.d<td}).reverse();
+ function ev(o,dim){var e=o.e,sp=!!e.special;return '<div class="item'+(sp?' sp':'')+'" style="'+(dim?'opacity:.5':'')+'"><span class="bar" style="background:'+hex(e.color,'var(--bd)')+'"></span><div class="t"><div>'+(sp?'🎂 ':'')+esc(e.title)+'</div><p class="sub">'+label(o.d)+(e.time?' '+e.time:'')+(e.yearly?'（毎年）':'')+'</p>'+(e.note?'<p class="sub" style="color:var(--tx)">'+esc(e.note)+'</p>':'')+'</div>'+(o.d===td?'<span class="badge">今日</span>':'')+(e._p?'<span class="who">自分のみ</span>':'')+'<span class="who">'+esc(e.who||'')+'</span>'+xb('events',o.i)+'</div>'}
+ $('l-event').innerHTML=(up.length?up.map(function(o){return ev(o,false)}).join(''):empty('これからの予定はないにゃ'))+(past.length?'<p class="h">過去の予定</p>'+past.map(function(o){return ev(o,true)}).join(''):'')}
+function rRem(){
+ var td=ymd(new Date()),rm=todayRems();
+ var later=S.rems.map(function(r,i){return {r:r,i:i}}).filter(function(o){return (o.r.at||'').slice(0,10)>td}).sort(function(a,b){return a.r.at<b.r.at?-1:1});
+ $('l-rem').innerHTML=(rm.length?rm.map(function(o){return remRow(o,false)}).join(''):empty('今日のリマインドはないにゃ'))+(later.length?'<details'+(futOpen?' open':'')+' ontoggle="tglFut(this)" style="margin-top:8px"><summary class="sub">明日以降のリマインド（'+later.length+'件）</summary>'+later.map(function(o){return remRow(o,true)}).join('')+'</details>':'')}
+function rMemo(){$('l-memo').innerHTML=S.memos.length?S.memos.map(function(m,i){return '<div class="item" style="align-items:flex-start"><span class="t" style="white-space:pre-wrap">'+esc(m.t)+'</span>'+(m._p?'<span class="who">自分のみ</span>':'<span class="badge">'+esc(m.who||'共有')+'</span>')+xb('memos',i)+'</div>'}).join(''):empty('メモはまだないにゃ')}
+function rChat(){
+ var me=myId();
+ $('l-chat').innerHTML=S.chat.length?S.chat.map(function(c,i){
+  var mine=c.uid===me,d=new Date(c.ts||0),rx=c.rx||{},cnt={},k;
+  for(k in rx){if(RX.indexOf(rx[k])>=0)cnt[rx[k]]=(cnt[rx[k]]||0)+1}
+  var chips=RX.filter(function(e){return cnt[e]}).map(function(e){return '<button class="'+(rx[me]===e?'me':'')+'" onclick="rxS('+i+',\''+e+'\')">'+e+' '+cnt[e]+'</button>'}).join('');
+  return '<div style="display:flex;flex-direction:column;align-items:'+(mine?'flex-end':'flex-start')+'"><p class="sub" style="margin-top:8px">'+esc(c.who||'')+'　'+(d.getMonth()+1)+'/'+d.getDate()+' '+d.getHours()+':'+p2(d.getMinutes())+(mine?'<button class="x" aria-label="削除" onclick="dl(\'chat\','+i+')" style="font-size:16px;min-height:0">×</button>':'')+'</p><div class="msg'+(mine?' me':'')+'">'+esc(c.text)+'</div><div class="rx">'+chips+'<button class="add" aria-label="反応をつける" onclick="rxT('+i+')">＋</button></div>'+(rxOpen===c.id?'<div class="rxp">'+RX.map(function(e){return '<button onclick="rxS('+i+',\''+e+'\')">'+e+'</button>'}).join('')+'</div>':'')+'</div>'}).join(''):empty('まだメッセージはないにゃ')}
+function render(){rToday();rTodo();rGoal();rEvent();rRem();rMemo();rChat()}
+
+/* ---- 通知 ---- */
+function check(){var now=dtl(new Date()),old=dtl(new Date(Date.now()-864e5)),hit=[],ch=false;S.rems.forEach(function(r){if(fired[r.id]||r.at>now)return;fired[r.id]=1;ch=true;if(r.at>=old)hit.push(r.text)});if(ch){try{localStorage.setItem('fam-fired',JSON.stringify(fired))}catch(e){}if(hit.length)banner(CATI+hit.map(esc).join('、')+' の時間だにゃ');render()}}
+var chatInit=false,seen=0,readTs=+(localStorage.getItem('fam-chat-read')||0),CATI='<svg width="22" height="22" style="vertical-align:middle"><use href="#cat"/></svg> ';
+if(!readTs){readTs=Date.now();try{localStorage.setItem('fam-chat-read',readTs)}catch(e){}}
+function myId(){return auth.currentUser?auth.currentUser.uid:''}
+function unread(){var me=myId();return S.chat.filter(function(c){return (c.ts||0)>readTs&&c.uid!==me}).length}
+function updBadge(){var n=unread();$('n-chat').innerHTML='チャット'+(n?'<span class="nb"><svg width="16" height="16"><use href="#cat"/></svg>'+(n>9?'9+':n)+'</span>':'')}
+function markRead(){if(S.chat.length){readTs=Math.max(readTs,S.chat[S.chat.length-1].ts||0);try{localStorage.setItem('fam-chat-read',readTs)}catch(e){}}updBadge()}
+function onChat(){var me=myId(),mx=S.chat.length?(S.chat[S.chat.length-1].ts||0):0;
+ if(!chatInit){chatInit=true;seen=mx}else{var nw=S.chat.filter(function(c){return (c.ts||0)>seen&&c.uid!==me});seen=Math.max(seen,mx);if(nw.length&&curTab!=='chat'){var c=nw[nw.length-1];banner(CATI+esc(c.who||'')+'さんからにゃ：'+esc(String(c.text||'').slice(0,30)))}}
+ if(curTab==='chat')markRead();else updBadge()}
+function mkRems(id,d,tm,title,sh){var now=dtl(new Date()),dd=new Date(d+'T00:00');dd.setDate(dd.getDate()-1);var L=[[ymd(dd)+'T21:00','明日：'+title]];if(tm){L.push([dtl(new Date(new Date(d+'T'+tm).getTime()-3600000)),'1時間後：'+title])}else{L.push([d+'T08:00','今日：'+title])}L.forEach(function(x){if(x[0]>now)addDoc(sh?C('rems'):U('rems'),{text:x[1],at:x[0],ts:Date.now(),evId:id})})}
+function sendChat(){var v=$('i-chat').value.trim();if(!v||!auth.currentUser)return;addDoc(C('chat'),{text:v,who:myName(),uid:auth.currentUser.uid,ts:Date.now()});$('i-chat').value=''}
+function stop(){chatInit=false;unsubs.forEach(function(u){u()});unsubs=[]}
+function denied(){stop();signOut(auth).then(function(){err('lmsg','このGoogleアカウントは許可されていません。')})}
+function lc(ref,key,priv){return onSnapshot(ref,function(sn){S[key]=sn.docs.map(function(d){return Object.assign({id:d.id,_p:priv},d.data())});if(key==='todS'||key==='todP')S.todos=S.todS.concat(S.todP).sort(function(a,b){return (b.ts||0)-(a.ts||0)});if(key==='memS'||key==='memP')S.memos=S.memS.concat(S.memP).sort(function(a,b){return (b.ts||0)-(a.ts||0)});if(key==='evS'||key==='evP')S.events=S.evS.concat(S.evP);if(key==='remS'||key==='remP')S.rems=S.remS.concat(S.remP);if(key==='chat')S.chat.reverse();render();if(key==='chat'){onChat();if(curTab==='chat'){var lid=S.chat.length?S.chat[S.chat.length-1].id:'';if(lid!==lastChatId){lastChatId=lid;window.scrollTo(0,document.body.scrollHeight)}}}if(key==='remS'||key==='remP')check()},function(e){if(e.code==='permission-denied'){if(priv)banner('Firebaseのルールを更新してください');else denied()}})}
+function listen(){stop();unsubs=[lc(C('todos'),'todS',0),lc(U('todos'),'todP',1),lc(C('rems'),'remS',0),lc(U('rems'),'remP',1),lc(query(C('chat'),orderBy('ts','desc'),limit(100)),'chat',0),lc(C('events'),'evS',0),lc(U('events'),'evP',1),lc(C('memos'),'memS',0),lc(U('memos'),'memP',1),lc(U('goals'),'goalP',1)]}
+function localData(){try{return JSON.parse(localStorage.getItem('fam-app-v1')||'null')}catch(e){return null}}
+function showImport(){var o=localData(),n=0;if(o)KS.forEach(function(k){n+=(o[k]||[]).length});$('imp').style.display=(n&&!localStorage.getItem('fam-app-imported'))?'block':'none'}
+function importLocal(){var o=localData();if(!o)return;var b=writeBatch(db),now=Date.now();
+ (o.todos||[]).forEach(function(x,j){b.set(doc(C('todos')),{t:x.t,d:!!x.d,ts:now-j})});
+ (o.events||[]).forEach(function(x,j){b.set(doc(C('events')),{date:x.date,time:x.time||'',title:x.title,who:x.who||'家族',note:x.note||'',color:x.color||'',ts:now-j})});
+ (o.rems||[]).forEach(function(x,j){b.set(doc(C('rems')),{text:x.text,at:x.at,ts:now-j})});
+ (o.memos||[]).forEach(function(x,j){b.set(doc(U('memos')),{t:x.t,ts:now-j})});
+ b.commit().then(function(){try{localStorage.setItem('fam-app-imported','1')}catch(e){}showImport();banner('取り込みました')}).catch(function(){banner('取り込みに失敗しました')})}
+function login(){err('lmsg','');signInWithPopup(auth,new GoogleAuthProvider()).catch(function(e){err('lmsg','ログインできませんでした（'+(e.code||'')+'）')})}
+function logout(){stop();unregDev();signOut(auth)}
+function refreshApp(){fetch(location.pathname,{cache:'reload'}).catch(function(){}).then(function(){location.reload()})}
+/* ---- アプリを閉じていても届く通知（このスマホの登録） ---- */
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(function(){});
+function devId(t){return t.replace(/[^A-Za-z0-9_-]/g,'_').slice(-60)}
+function pushSupported(){return ('Notification' in window)&&('serviceWorker' in navigator)&&('PushManager' in window)}
+function pushState(){
+ var el=$('pushbox');if(!el)return;
+ var h='<p class="h" style="margin-top:0">通知</p>';
+ if(!pushSupported()){el.innerHTML=h+'<p class="sub">このブラウザは、アプリを閉じている間の通知に対応していません。</p>';return}
+ var on=localStorage.getItem('fam-push-on')==='1'&&Notification.permission==='granted';
+ if(Notification.permission==='denied'){el.innerHTML=h+'<p class="sub">通知がブロックされています。ブラウザ（またはアプリ）の設定で、このサイトの通知を許可してください。</p>';return}
+ if(!on){el.innerHTML=h+'<p class="sub" style="margin-bottom:8px">アプリを閉じていても、リマインドやチャットが届くようになります。</p><button class="pri" onclick="enablePush()">このスマホで通知をオンにする</button>'+(window.PUSH_VAPID?'':'<p class="err" style="margin-top:8px">通知の鍵（push-config.js）がまだ設定されていません。</p>');return}
+ var chat=localStorage.getItem('fam-push-chat')!=='0';
+ el.innerHTML=h+'<p class="sub" style="margin-bottom:8px">このスマホの通知はオンです。</p><label style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><input type="checkbox" id="i-pchat" '+(chat?'checked':'')+' onchange="pushChat(this.checked)" style="width:20px;height:20px"> チャットも通知する</label><div class="row"><button onclick="pushTest()">テスト表示</button><button onclick="pushOff()">オフにする</button></div>'}
+async function enablePush(quiet){
+ try{
+  if(!window.PUSH_VAPID){if(!quiet)banner('通知の鍵（push-config.js）が見つかりません');return}
+  if(!quiet){var perm=await Notification.requestPermission();if(perm!=='granted'){pushState();return}}
+  var reg=await navigator.serviceWorker.register('sw.js');await navigator.serviceWorker.ready;
+  var M=await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging.js');
+  var token=await M.getToken(M.getMessaging(app),{vapidKey:window.PUSH_VAPID,serviceWorkerRegistration:reg});
+  if(!token)throw new Error('トークンが取得できませんでした');
+  var id=devId(token),chat=localStorage.getItem('fam-push-chat')!=='0';
+  await setDoc(UD('devices',id),{token:token,chat:chat,name:myName(),ua:navigator.userAgent.slice(0,120),ts:Date.now()});
+  localStorage.setItem('fam-push-on','1');localStorage.setItem('fam-push-dev',id);
+  if(!quiet)banner(CATI+'通知をオンにしたにゃ');
+ }catch(e){if(!quiet)banner('通知をオンにできませんでした：'+esc(e.code||e.message||''))}
+ pushState()}
+function unregDev(){var id=localStorage.getItem('fam-push-dev');if(id&&auth.currentUser)deleteDoc(UD('devices',id)).catch(function(){})}
+async function pushOff(){
+ try{unregDev();localStorage.setItem('fam-push-on','0');var M=await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging.js');await M.deleteToken(M.getMessaging(app))}catch(e){}
+ pushState()}
+function pushChat(v){try{localStorage.setItem('fam-push-chat',v?'1':'0')}catch(e){}var id=localStorage.getItem('fam-push-dev');if(id)updateDoc(UD('devices',id),{chat:v}).catch(function(){})}
+function pushTest(){navigator.serviceWorker.ready.then(function(r){return r.showNotification('🐾 小西家',{body:'通知のテストだにゃ',icon:'icon-192.png',badge:'badge-96.png'})}).catch(function(e){banner('テスト表示できませんでした')})}
+Object.assign(window,{enablePush:enablePush,pushOff:pushOff,pushChat:pushChat,pushTest:pushTest,sendChat:sendChat,show:show,dl:dl,tg:tg,addTodo:addTodo,addEvent:addEvent,addRem:addRem,addMemo:addMemo,setCol:setCol,importLocal:importLocal,login:login,logout:logout,refreshApp:refreshApp,addGoal:addGoal,gtg:gtg,gdel:gdel,setGKind:setGKind,setGCol:setGCol,rxT:rxT,rxS:rxS,tglFut:tglFut});
+$('i-date').value=ymd(new Date());
+$('i-rdate').value=ymd(new Date());
+drawDots();
+$('i-chat').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.isComposing){e.preventDefault();sendChat()}});
+var tab='today';try{tab=localStorage.getItem('fam-app-tab')||'today'}catch(e){}
+var hh=location.hash.replace('#','');if(TT[hh])tab=hh;
+show(TT[tab]?tab:'today');render();
+onAuthStateChanged(auth,function(u){
+ var on=!!u;$('login').style.display=on?'none':'block';$('app').style.display=on?'block':'none';$('nav').style.display=on?'flex':'none';
+ if(on){err('lmsg','');$('i-who').value=((u.displayName||'家族').split(/\s+/)[0]).slice(0,6);showImport();listen();pushState();if(localStorage.getItem('fam-push-on')==='1'&&window.Notification&&Notification.permission==='granted')enablePush(true);setTimeout(function(){navCenter(curTab)},60)}else{stop()}
+});
+setInterval(check,10000);
+</script></body></html>
