@@ -46,6 +46,8 @@ nav button.on::before{opacity:1}
 .seg button{flex:1}
 .seg button.on{background:var(--acbg);border-color:var(--ac);color:var(--acx);font-weight:600}
 .gcard{--gc:var(--ac);background:var(--card);border:1px solid var(--bd);border-left:8px solid var(--gc);border-radius:var(--r);padding:12px 8px 6px 12px;margin-bottom:12px}
+.newscard{padding:16px 14px 12px 16px;min-height:calc(100vh - 230px);min-height:calc(100dvh - 230px)}
+.nl{font-size:16px;margin:6px 0;color:var(--tx)}
 .ghead{display:flex;align-items:center;gap:10px;padding-bottom:6px}
 .gt{font-weight:600}
 .srow{display:flex;align-items:center;gap:10px;padding:4px 0 4px 6px;border-top:1px dashed var(--bd)}
@@ -86,14 +88,19 @@ details>summary{cursor:pointer;padding:6px 0}
 <div id="banner"></div>
 
 <section id="s-today">
-<div id="l-today"></div>
-</section>
-
-<section id="s-todo">
-<p class="sub" style="margin-bottom:8px">ふだんは家族みんなに見えます。「家族と共有する」を外すと、自分だけのTODOになります。</p>
+<p class="sub" id="news-date" style="margin-bottom:6px"></p>
+<div class="gcard newscard" style="--gc:#E8856A">
+<div class="gt" style="font-size:18px">📰 家族ニュース</div>
+<p class="h" style="margin-top:14px">🎯 個人の大目標</p>
+<div id="nc-goals"></div>
+<p class="h">📌 お知らせ</p>
+<div id="nc-news"></div>
+<p class="h">✅ TODO</p>
 <div class="row"><input id="i-todo" placeholder="牛乳を買う"><button class="pri" onclick="addTodo()">追加</button></div>
 <div class="row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="i-tshare" checked style="width:20px;height:20px"> 家族と共有する</label></div>
 <p class="err" id="e-todo"></p><div id="l-todo"></div>
+</div>
+<div id="l-today"></div>
 </section>
 
 <section id="s-goal">
@@ -146,7 +153,6 @@ details>summary{cursor:pointer;padding:6px 0}
 </main>
 <nav id="nav" style="display:none">
 <button id="n-today" onclick="show('today')">ニュース</button>
-<button id="n-todo" onclick="show('todo')">TODO</button>
 <button id="n-goal" onclick="show('goal')">目標</button>
 <button id="n-event" onclick="show('event')">予定</button>
 <button id="n-rem" onclick="show('rem')">リマインド</button>
@@ -166,7 +172,7 @@ function D(k,id){return doc(db,'families','main',k,id)}
 function U(k){return collection(db,'users',auth.currentUser.uid,k)}
 function UD(k,id){return doc(db,'users',auth.currentUser.uid,k,id)}
 var $=function(i){return document.getElementById(i)};
-var W=['日','月','火','水','木','金','土'],TT={today:'家族ニュース',todo:'TODO',goal:'やるべきこと',event:'予定',rem:'リマインド',memo:'メモ',chat:'チャット'},KS=['todos','events','rems','memos'],TABS=['today','todo','goal','event','rem','memo','chat'];
+var W=['日','月','火','水','木','金','土'],TT={today:'家族ニュース',goal:'やるべきこと',event:'予定',rem:'リマインド',memo:'メモ',chat:'チャット'},KS=['todos','events','rems','memos'],TABS=['today','goal','event','rem','memo','chat'];
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function p2(n){return String(n).padStart(2,'0')}
 function ymd(d){return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())}
@@ -240,20 +246,21 @@ function rxT(i){var c=S.chat[i];if(!c)return;rxOpen=rxOpen===c.id?null:c.id;rend
 function rxS(i,e){var c=S.chat[i];if(!c)return;var me=myId(),cur=c.rx&&c.rx[me],f={};f['rx.'+me]=(cur===e)?deleteField():e;updateDoc(D('chat',c.id),f).catch(function(){banner('反応をつけられませんでした')});rxOpen=null;render()}
 
 /* ---- 画面 ---- */
+function goalsTop(){
+ var gl=S.goalP.filter(function(g){return g.kind==='long'&&!g.d}).sort(function(a,b){return (a.ts||0)-(b.ts||0)});
+ if(!gl.length)return '<p class="sub">まだ大目標がありません。「目標」タブで作れます。</p>';
+ return gl.map(function(L){var kids=kidsOf(L.id),dn=kids.filter(function(k){return k.d}).length;return '<div style="--gc:'+hex(L.color,'#B5531F')+';border-left:6px solid var(--gc);padding:4px 10px;margin-bottom:8px"><div class="gt">'+esc(L.t)+'</div>'+prog(dn,kids.length)+'</div>'}).join('')}
 function rToday(){
- var td=ymd(new Date()),h='<p class="sub" style="margin-bottom:4px">'+label(td)+'</p>',any=false;h+=newsCard(td);
+ var td=ymd(new Date());
+ $('news-date').textContent=label(td);
+ $('nc-goals').innerHTML=goalsTop();
+ $('nc-news').innerHTML=newsLines(td).map(function(l){return '<p class="nl">・'+esc(l)+'</p>'}).join('');
+ var h='';
  function trow(bar,title,sub,extra){return '<div class="item">'+(bar?'<span class="bar" style="background:'+bar+'"></span>':'')+'<div class="t"><div>'+title+'</div>'+(sub?'<p class="sub">'+sub+'</p>':'')+'</div>'+(extra||'')+'</div>'}
  var evs=S.events.map(function(e){return {e:e,d:effDate(e)}}).filter(function(o){return o.d===td}).sort(function(a,b){return (a.e.time||'')<(b.e.time||'')?-1:1});
- if(evs.length){any=true;h+='<p class="h">今日の予定</p>'+evs.map(function(o){var e=o.e;return trow(hex(e.color,'var(--bd)'),(e.special?'🎂 ':'')+esc(e.title),(e.time||'終日')+(e.note?'　'+esc(e.note):''),'<span class="who">'+esc(e.who||'')+'</span>')}).join('')}
- var soon=S.events.filter(function(e){return e.special}).map(function(e){var d=effDate(e);return {e:e,d:d,n:Math.round((new Date(d+'T00:00')-new Date(td+'T00:00'))/864e5)}}).filter(function(o){return o.n>0&&o.n<=14}).sort(function(a,b){return a.n-b.n});
- if(soon.length){any=true;h+='<p class="h">もうすぐ</p>'+soon.map(function(o){return trow(null,'🎂 '+esc(o.e.title),label(o.d),'<span class="badge">あと'+o.n+'日</span>')}).join('')}
+ if(evs.length)h+='<p class="h">今日の予定</p>'+evs.map(function(o){var e=o.e;return trow(hex(e.color,'var(--bd)'),(e.special?'🎂 ':'')+(e.countdown?'⏳ ':'')+esc(e.title),(e.time||'終日')+(e.note?'　'+esc(e.note):''),'<span class="who">'+esc(e.who||'')+'</span>')}).join('');
  var rm=todayRems();
- if(rm.length){any=true;h+='<p class="h">今日のリマインド</p>'+rm.map(function(o){var r=o.r;return trow(null,esc(r.text),(r.allday?'終日':r.at.slice(11))+(fired[r.id]?'　通知済み':''),'')}).join('')}
- var tds=S.todos.map(function(x,i){return {x:x,i:i}}).filter(function(o){return !o.x.d});
- if(tds.length){any=true;h+='<p class="h">TODO（'+tds.length+'件）</p>'+tds.slice(0,5).map(function(o){return '<div class="item"><input type="checkbox" aria-label="完了" onchange="tg('+o.i+')" style="width:22px;height:22px;flex:none"><span class="t">'+esc(o.x.t)+'</span>'+tb(o.x)+'</div>'}).join('')+(tds.length>5?'<p class="sub">ほか'+(tds.length-5)+'件</p>':'')}
- var gl=S.goalP.filter(function(g){return g.kind==='long'&&!g.d}).sort(function(a,b){return (a.ts||0)-(b.ts||0)});
- if(gl.length){any=true;h+='<p class="h">やるべきこと</p>'+gl.map(function(L){var kids=kidsOf(L.id),dn=kids.filter(function(k){return k.d}).length;return '<div class="gcard" style="--gc:'+hex(L.color,'#B5531F')+';padding-bottom:10px"><div class="gt">'+esc(L.t)+'</div>'+prog(dn,kids.length)+'</div>'}).join('')}
- if(!any)h+=empty('今日は何もないにゃ。のんびりしてね');
+ if(rm.length)h+='<p class="h">今日のリマインド</p>'+rm.map(function(o){var r=o.r;return trow(null,esc(r.text),(r.allday?'終日':r.at.slice(11))+(fired[r.id]?'　通知済み':''),'')}).join('');
  $('l-today').innerHTML=h}
 function rTodo(){$('l-todo').innerHTML=S.todos.length?S.todos.map(function(x,i){return '<div class="item"><input type="checkbox" '+(x.d?'checked':'')+' onchange="tg('+i+')" style="width:22px;height:22px;flex:none"><span class="t '+(x.d?'done':'')+'">'+esc(x.t)+'</span>'+tb(x)+xb('todos',i)+'</div>'}).join(''):empty('TODOはまだないにゃ')}
 function rGoal(){
@@ -318,7 +325,7 @@ function login(){err('lmsg','');signInWithPopup(auth,new GoogleAuthProvider()).c
 function logout(){stop();unregDev();signOut(auth)}
 function refreshApp(){fetch(location.pathname,{cache:'reload'}).catch(function(){}).then(function(){location.reload()})}
 /* ---- 家族ニュース ---- */
-var NEWS_W=null;
+var NEWS_W=null,NEWS_WS='loading';
 function dayDiff(a,b){return Math.round((new Date(a+'T00:00')-new Date(b+'T00:00'))/864e5)}
 function WC(c){return c===0?'快晴':c<=2?'晴れ':c===3?'くもり':c<=48?'霧':c<=57?'霧雨':c<=67?'雨':c<=77?'雪':c<=82?'にわか雨':c<=86?'にわか雪':'雷雨'}
 function isRain(c,p){return (c>=51&&c<=67)||(c>=80&&c<=82)||c>=95||p>=60}
@@ -330,7 +337,7 @@ function newsLines(td){
  else L.push('今日の予定はありません');
  evs.filter(function(o){var k=dayDiff(o.d,td);return (o.e.special||o.e.countdown)&&k>0&&k<=(o.e.special?14:30)}).sort(function(a,b){return dayDiff(a.d,td)-dayDiff(b.d,td)}).slice(0,3).forEach(function(o){var k=dayDiff(o.d,td);L.push(k===1?'明日は'+o.e.title:o.e.title+'まであと'+k+'日')});
  var n=S.todos.filter(function(x){return !x.d}).length;L.push(n?'TODO 未完了 '+n+'件':'TODOはぜんぶ終わっています');
- if(NEWS_W)L=L.concat(weatherLines(NEWS_W));
+ if(NEWS_W)L=L.concat(weatherLines(NEWS_W));else L.push(NEWS_WS==='err'?'天気を取得できませんでした（地域名を確認してください）':'天気を読み込み中…');
  return L}
 function newsCard(td){return '<div class="gcard" style="--gc:#E8856A;padding-bottom:10px;margin:8px 0 4px"><div class="gt">📰 家族ニュース</div>'+newsLines(td).map(function(l){return '<p class="sub" style="color:var(--tx);margin-top:4px">・'+esc(l)+'</p>'}).join('')+'</div>'}
 async function loadWeather(){
@@ -338,12 +345,16 @@ async function loadWeather(){
   var td=ymd(new Date()),cfg={city:'東京'};
   try{var r0=await fetch('family-config.json?'+Date.now());if(r0.ok)cfg=Object.assign(cfg,await r0.json())}catch(e){}
   var c=JSON.parse(localStorage.getItem('fam-weather')||'null');
-  if(c&&c.date===td&&c.city===cfg.city){NEWS_W=c.w;rToday();return}
-  var g=await (await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(cfg.city)+'&count=1&language=ja&country_code=JP')).json();
-  var r=g.results&&g.results[0];if(!r)return;
-  var f=await (await fetch('https://api.open-meteo.com/v1/forecast?latitude='+r.latitude+'&longitude='+r.longitude+'&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=7')).json();
-  NEWS_W={name:cfg.city,d:f.daily};localStorage.setItem('fam-weather',JSON.stringify({date:td,city:cfg.city,w:NEWS_W}));rToday();
- }catch(e){}}
+  if(c&&c.date===td&&c.city===cfg.city){NEWS_W=c.w;NEWS_WS='ok';rToday();return}
+  var pos=null;
+  if(typeof cfg.lat==='number'&&typeof cfg.lon==='number')pos={latitude:cfg.lat,longitude:cfg.lon};
+  else{var names=[cfg.city],t=String(cfg.city).replace(/(都|道|府|県|市|区|町|村)$/,'');if(t&&t!==cfg.city)names.push(t);
+   for(var i=0;i<names.length&&!pos;i++){var g=await (await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(names[i])+'&count=1&language=ja&country_code=JP')).json();if(g.results&&g.results[0])pos=g.results[0]}}
+  if(!pos)throw new Error('geo');
+  var f=await (await fetch('https://api.open-meteo.com/v1/forecast?latitude='+pos.latitude+'&longitude='+pos.longitude+'&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=7')).json();
+  if(!f.daily)throw new Error('forecast');
+  NEWS_W={name:cfg.city,d:f.daily};NEWS_WS='ok';localStorage.setItem('fam-weather',JSON.stringify({date:td,city:cfg.city,w:NEWS_W}));rToday();
+ }catch(e){NEWS_WS='err';rToday()}}
 function pushNews(v){try{localStorage.setItem('fam-push-news',v?'1':'0')}catch(e){}var id=localStorage.getItem('fam-push-dev');if(id)updateDoc(UD('devices',id),{news:v}).catch(function(){})}
 /* ---- アプリを閉じていても届く通知（このスマホの登録） ---- */
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(function(){});

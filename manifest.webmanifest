@@ -38,8 +38,8 @@
   ],
   "shortcuts": [
     {
-      "name": "今日",
-      "short_name": "今日",
+      "name": "ニュース",
+      "short_name": "ニュース",
       "url": "./family-app.html#today",
       "icons": [
         {

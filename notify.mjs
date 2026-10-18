@@ -99,11 +99,18 @@ const WC = (c) => (c === 0 ? '快晴' : c <= 2 ? '晴れ' : c === 3 ? 'くもり
 const isRain = (c, p) => (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95 || p >= 60;
 async function getWeather() {
   try {
-    const g = await (await fetch('https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(cfg.city) + '&count=1&language=ja&country_code=JP')).json();
-    const r = g.results && g.results[0];
-    if (!r) { console.log('天気の地域が見つかりません：' + cfg.city); return null; }
-    const w = await (await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + r.latitude + '&longitude=' + r.longitude + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=7')).json();
-    return w.daily;
+    let pos = null;
+    if (typeof cfg.lat === 'number' && typeof cfg.lon === 'number') pos = { latitude: cfg.lat, longitude: cfg.lon };
+    else {
+      const names = [cfg.city, String(cfg.city).replace(/(都|道|府|県|市|区|町|村)$/, '')].filter((v, i, a) => v && a.indexOf(v) === i);
+      for (const nm of names) {
+        const g = await (await fetch('https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(nm) + '&count=1&language=ja&country_code=JP')).json();
+        if (g.results && g.results[0]) { pos = g.results[0]; break; }
+      }
+    }
+    if (!pos) { console.log('天気の地域が見つかりません：' + cfg.city); return null; }
+    const w = await (await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + pos.latitude + '&longitude=' + pos.longitude + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=7')).json();
+    return w.daily || null;
   } catch (e) { console.log('天気の取得に失敗：' + e.message); return null; }
 }
 function newsLines(events, todos, w, td) {
