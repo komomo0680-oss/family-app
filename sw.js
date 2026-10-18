@@ -8,7 +8,7 @@ self.addEventListener('push',function(e){
   try{p=e.data?e.data.json():{}}catch(_){try{p={title:'小西家',body:e.data.text()}}catch(__){}}
   var d=(p.data&&typeof p.data==='object')?p.data:(p.notification&&typeof p.notification==='object'?p.notification:p);
   var title=d.title||'🐾 小西家';
-  var opts={body:d.body||'',icon:'icon-192.png',badge:'icon-192.png',data:{url:d.url||'./family-app.html'}};
+  var opts={body:d.body||'',icon:'icon-192.png',badge:'badge-96.png',data:{url:d.url||'./family-app.html'}};
   if(d.tag)opts.tag=d.tag;
   e.waitUntil(self.clients.matchAll({type:'window',includeUncontrolled:true}).then(function(cs){
     // アプリを開いて見ているときは、アプリ内のお知らせに任せる
