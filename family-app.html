@@ -145,7 +145,7 @@ details>summary{cursor:pointer;padding:6px 0}
 <p style="text-align:center;margin-top:24px"><button onclick="refreshApp()">最新の画面に更新</button> <button onclick="logout()">ログアウト</button></p>
 </main>
 <nav id="nav" style="display:none">
-<button id="n-today" onclick="show('today')">今日</button>
+<button id="n-today" onclick="show('today')">ニュース</button>
 <button id="n-todo" onclick="show('todo')">TODO</button>
 <button id="n-goal" onclick="show('goal')">目標</button>
 <button id="n-event" onclick="show('event')">予定</button>
@@ -166,7 +166,7 @@ function D(k,id){return doc(db,'families','main',k,id)}
 function U(k){return collection(db,'users',auth.currentUser.uid,k)}
 function UD(k,id){return doc(db,'users',auth.currentUser.uid,k,id)}
 var $=function(i){return document.getElementById(i)};
-var W=['日','月','火','水','木','金','土'],TT={today:'今日',todo:'TODO',goal:'やるべきこと',event:'予定',rem:'リマインド',memo:'メモ',chat:'チャット'},KS=['todos','events','rems','memos'],TABS=['today','todo','goal','event','rem','memo','chat'];
+var W=['日','月','火','水','木','金','土'],TT={today:'家族ニュース',todo:'TODO',goal:'やるべきこと',event:'予定',rem:'リマインド',memo:'メモ',chat:'チャット'},KS=['todos','events','rems','memos'],TABS=['today','todo','goal','event','rem','memo','chat'];
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function p2(n){return String(n).padStart(2,'0')}
 function ymd(d){return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())}
