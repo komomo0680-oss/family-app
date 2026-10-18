@@ -112,6 +112,7 @@ details>summary{cursor:pointer;padding:6px 0}
 <div class="row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="i-share" checked style="width:20px;height:20px"> 家族と共有する</label></div>
 <div class="row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="i-auto" checked style="width:20px;height:20px"> 前日の夜と直前に通知する</label></div>
 <div class="row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="i-special" style="width:20px;height:20px"> 🎂 誕生日・記念日（毎年表示する）</label></div>
+<div class="row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="i-count" style="width:20px;height:20px"> ⏳ カウントダウンする（あと◯日を朝のニュースに出す）</label></div>
 <div class="dots" id="dots"></div>
 <div class="row"><button class="pri" style="flex:1" onclick="addEvent()">予定を追加</button></div>
 <p class="err" id="e-event"></p><div id="l-event"></div>
@@ -222,7 +223,7 @@ function celebrate(){
 /* ---- 予定 ---- */
 function fixMD(y,md){if(md==='02-29'&&!(y%4===0&&(y%100!==0||y%400===0)))md='02-28';return y+'-'+md}
 function effDate(e){if(!e.yearly)return e.date;var td=ymd(new Date()),y=new Date().getFullYear(),md=e.date.slice(5),c=fixMD(y,md);if(c<td)c=fixMD(y+1,md);if(c<e.date)c=e.date;return c}
-function addEvent(){var d=$('i-date').value,t=$('i-etitle').value.trim();if(!d){err('e-event','日付を選んでください');return}if(!t){err('e-event','予定の内容を入力してください');return}var sh=$('i-share').checked,tm=$('i-time').value,sp=$('i-special').checked;addDoc(sh?C('events'):U('events'),{date:d,time:tm,title:t,who:$('i-who').value.trim()||'家族',note:$('i-note').value.trim(),color:col,special:sp,yearly:sp,ts:Date.now()}).then(function(ref){if($('i-auto').checked)mkRems(ref.id,d,tm,t,sh)});$('i-etitle').value='';$('i-note').value='';$('i-special').checked=false}
+function addEvent(){var d=$('i-date').value,t=$('i-etitle').value.trim();if(!d){err('e-event','日付を選んでください');return}if(!t){err('e-event','予定の内容を入力してください');return}var sh=$('i-share').checked,tm=$('i-time').value,sp=$('i-special').checked;addDoc(sh?C('events'):U('events'),{date:d,time:tm,title:t,who:$('i-who').value.trim()||'家族',note:$('i-note').value.trim(),color:col,special:sp,yearly:sp,countdown:$('i-count').checked,ts:Date.now()}).then(function(ref){if($('i-auto').checked)mkRems(ref.id,d,tm,t,sh)});$('i-etitle').value='';$('i-note').value='';$('i-special').checked=false;$('i-count').checked=false}
 
 /* ---- リマインド（自分だけ・当日のみ表示） ---- */
 function addRem(){var t=$('i-rtext').value.trim(),d=$('i-rdate').value,tm=$('i-rtime').value;if(!t){err('e-rem','内容を入力してください');return}if(!d){err('e-rem','日付を選んでください');return}addDoc(U('rems'),{text:t,at:d+'T'+(tm||'08:00'),allday:!tm,ts:Date.now()});$('i-rtext').value='';$('i-rtime').value=''}
@@ -240,7 +241,7 @@ function rxS(i,e){var c=S.chat[i];if(!c)return;var me=myId(),cur=c.rx&&c.rx[me],
 
 /* ---- 画面 ---- */
 function rToday(){
- var td=ymd(new Date()),h='<p class="sub" style="margin-bottom:4px">'+label(td)+'</p>',any=false;
+ var td=ymd(new Date()),h='<p class="sub" style="margin-bottom:4px">'+label(td)+'</p>',any=false;h+=newsCard(td);
  function trow(bar,title,sub,extra){return '<div class="item">'+(bar?'<span class="bar" style="background:'+bar+'"></span>':'')+'<div class="t"><div>'+title+'</div>'+(sub?'<p class="sub">'+sub+'</p>':'')+'</div>'+(extra||'')+'</div>'}
  var evs=S.events.map(function(e){return {e:e,d:effDate(e)}}).filter(function(o){return o.d===td}).sort(function(a,b){return (a.e.time||'')<(b.e.time||'')?-1:1});
  if(evs.length){any=true;h+='<p class="h">今日の予定</p>'+evs.map(function(o){var e=o.e;return trow(hex(e.color,'var(--bd)'),(e.special?'🎂 ':'')+esc(e.title),(e.time||'終日')+(e.note?'　'+esc(e.note):''),'<span class="who">'+esc(e.who||'')+'</span>')}).join('')}
@@ -271,7 +272,7 @@ function rEvent(){
  var td=ymd(new Date());
  var idx=S.events.map(function(e,i){return {e:e,i:i,d:effDate(e)}}).sort(function(a,b){return (a.d+(a.e.time||''))<(b.d+(b.e.time||''))?-1:1});
  var up=idx.filter(function(o){return o.d>=td}),past=idx.filter(function(o){return o.d<td}).reverse();
- function ev(o,dim){var e=o.e,sp=!!e.special;return '<div class="item'+(sp?' sp':'')+'" style="'+(dim?'opacity:.5':'')+'"><span class="bar" style="background:'+hex(e.color,'var(--bd)')+'"></span><div class="t"><div>'+(sp?'🎂 ':'')+esc(e.title)+'</div><p class="sub">'+label(o.d)+(e.time?' '+e.time:'')+(e.yearly?'（毎年）':'')+'</p>'+(e.note?'<p class="sub" style="color:var(--tx)">'+esc(e.note)+'</p>':'')+'</div>'+(o.d===td?'<span class="badge">今日</span>':'')+(e._p?'<span class="who">自分のみ</span>':'')+'<span class="who">'+esc(e.who||'')+'</span>'+xb('events',o.i)+'</div>'}
+ function ev(o,dim){var e=o.e,sp=!!e.special;return '<div class="item'+(sp?' sp':'')+'" style="'+(dim?'opacity:.5':'')+'"><span class="bar" style="background:'+hex(e.color,'var(--bd)')+'"></span><div class="t"><div>'+(sp?'🎂 ':'')+(e.countdown?'⏳ ':'')+esc(e.title)+'</div><p class="sub">'+label(o.d)+(e.time?' '+e.time:'')+(e.yearly?'（毎年）':'')+'</p>'+(e.note?'<p class="sub" style="color:var(--tx)">'+esc(e.note)+'</p>':'')+'</div>'+(o.d===td?'<span class="badge">今日</span>':'')+(e._p?'<span class="who">自分のみ</span>':'')+'<span class="who">'+esc(e.who||'')+'</span>'+xb('events',o.i)+'</div>'}
  $('l-event').innerHTML=(up.length?up.map(function(o){return ev(o,false)}).join(''):empty('これからの予定はないにゃ'))+(past.length?'<p class="h">過去の予定</p>'+past.map(function(o){return ev(o,true)}).join(''):'')}
 function rRem(){
  var td=ymd(new Date()),rm=todayRems();
@@ -316,6 +317,34 @@ function importLocal(){var o=localData();if(!o)return;var b=writeBatch(db),now=D
 function login(){err('lmsg','');signInWithPopup(auth,new GoogleAuthProvider()).catch(function(e){err('lmsg','ログインできませんでした（'+(e.code||'')+'）')})}
 function logout(){stop();unregDev();signOut(auth)}
 function refreshApp(){fetch(location.pathname,{cache:'reload'}).catch(function(){}).then(function(){location.reload()})}
+/* ---- 家族ニュース ---- */
+var NEWS_W=null;
+function dayDiff(a,b){return Math.round((new Date(a+'T00:00')-new Date(b+'T00:00'))/864e5)}
+function WC(c){return c===0?'快晴':c<=2?'晴れ':c===3?'くもり':c<=48?'霧':c<=57?'霧雨':c<=67?'雨':c<=77?'雪':c<=82?'にわか雨':c<=86?'にわか雪':'雷雨'}
+function isRain(c,p){return (c>=51&&c<=67)||(c>=80&&c<=82)||c>=95||p>=60}
+function weatherLines(w){var d=w.d,L=[];L.push('今日の'+w.name+'は'+WC(d.weather_code[0])+'　最高'+Math.round(d.temperature_2m_max[0])+'°　最低'+Math.round(d.temperature_2m_min[0])+'°　降水'+d.precipitation_probability_max[0]+'%');var r=0;for(var i=0;i<d.weather_code.length;i++)if(isRain(d.weather_code[i],d.precipitation_probability_max[i]))r++;if(r)L.push('今週は雨予報（'+r+'日）');return L}
+function newsLines(td){
+ var L=[],evs=S.events.map(function(e){return {e:e,d:effDate(e)}});
+ var today=evs.filter(function(o){return o.d===td}).sort(function(a,b){return (a.e.time||'')<(b.e.time||'')?-1:1});
+ if(today.length)L.push('今日の予定 '+today.length+'件：'+today.slice(0,3).map(function(o){return o.e.title+(o.e.time?'（'+o.e.time+'）':'')}).join('、')+(today.length>3?' ほか':''));
+ else L.push('今日の予定はありません');
+ evs.filter(function(o){var k=dayDiff(o.d,td);return (o.e.special||o.e.countdown)&&k>0&&k<=(o.e.special?14:30)}).sort(function(a,b){return dayDiff(a.d,td)-dayDiff(b.d,td)}).slice(0,3).forEach(function(o){var k=dayDiff(o.d,td);L.push(k===1?'明日は'+o.e.title:o.e.title+'まであと'+k+'日')});
+ var n=S.todos.filter(function(x){return !x.d}).length;L.push(n?'TODO 未完了 '+n+'件':'TODOはぜんぶ終わっています');
+ if(NEWS_W)L=L.concat(weatherLines(NEWS_W));
+ return L}
+function newsCard(td){return '<div class="gcard" style="--gc:#E8856A;padding-bottom:10px;margin:8px 0 4px"><div class="gt">📰 家族ニュース</div>'+newsLines(td).map(function(l){return '<p class="sub" style="color:var(--tx);margin-top:4px">・'+esc(l)+'</p>'}).join('')+'</div>'}
+async function loadWeather(){
+ try{
+  var td=ymd(new Date()),cfg={city:'東京'};
+  try{var r0=await fetch('family-config.json?'+Date.now());if(r0.ok)cfg=Object.assign(cfg,await r0.json())}catch(e){}
+  var c=JSON.parse(localStorage.getItem('fam-weather')||'null');
+  if(c&&c.date===td&&c.city===cfg.city){NEWS_W=c.w;rToday();return}
+  var g=await (await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(cfg.city)+'&count=1&language=ja&country_code=JP')).json();
+  var r=g.results&&g.results[0];if(!r)return;
+  var f=await (await fetch('https://api.open-meteo.com/v1/forecast?latitude='+r.latitude+'&longitude='+r.longitude+'&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=7')).json();
+  NEWS_W={name:cfg.city,d:f.daily};localStorage.setItem('fam-weather',JSON.stringify({date:td,city:cfg.city,w:NEWS_W}));rToday();
+ }catch(e){}}
+function pushNews(v){try{localStorage.setItem('fam-push-news',v?'1':'0')}catch(e){}var id=localStorage.getItem('fam-push-dev');if(id)updateDoc(UD('devices',id),{news:v}).catch(function(){})}
 /* ---- アプリを閉じていても届く通知（このスマホの登録） ---- */
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(function(){});
 function devId(t){return t.replace(/[^A-Za-z0-9_-]/g,'_').slice(-60)}
@@ -327,8 +356,8 @@ function pushState(){
  var on=localStorage.getItem('fam-push-on')==='1'&&Notification.permission==='granted';
  if(Notification.permission==='denied'){el.innerHTML=h+'<p class="sub">通知がブロックされています。ブラウザ（またはアプリ）の設定で、このサイトの通知を許可してください。</p>';return}
  if(!on){el.innerHTML=h+'<p class="sub" style="margin-bottom:8px">アプリを閉じていても、リマインドやチャットが届くようになります。</p><button class="pri" onclick="enablePush()">このスマホで通知をオンにする</button>'+(window.PUSH_VAPID?'':'<p class="err" style="margin-top:8px">通知の鍵（push-config.js）がまだ設定されていません。</p>');return}
- var chat=localStorage.getItem('fam-push-chat')!=='0';
- el.innerHTML=h+'<p class="sub" style="margin-bottom:8px">このスマホの通知はオンです。</p><label style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><input type="checkbox" id="i-pchat" '+(chat?'checked':'')+' onchange="pushChat(this.checked)" style="width:20px;height:20px"> チャットも通知する</label><div class="row"><button onclick="pushTest()">テスト表示</button><button onclick="pushOff()">オフにする</button></div>'}
+ var chat=localStorage.getItem('fam-push-chat')!=='0',news=localStorage.getItem('fam-push-news')!=='0';
+ el.innerHTML=h+'<p class="sub" style="margin-bottom:8px">このスマホの通知はオンです。</p><label style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><input type="checkbox" id="i-pchat" '+(chat?'checked':'')+' onchange="pushChat(this.checked)" style="width:20px;height:20px"> チャットも通知する</label><label style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><input type="checkbox" id="i-pnews" '+(news?'checked':'')+' onchange="pushNews(this.checked)" style="width:20px;height:20px"> 朝の家族ニュースを通知する</label><div class="row"><button onclick="pushTest()">テスト表示</button><button onclick="pushOff()">オフにする</button></div>'}
 async function enablePush(quiet){
  try{
   if(!window.PUSH_VAPID){if(!quiet)banner('通知の鍵（push-config.js）が見つかりません');return}
@@ -337,8 +366,8 @@ async function enablePush(quiet){
   var M=await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging.js');
   var token=await M.getToken(M.getMessaging(app),{vapidKey:window.PUSH_VAPID,serviceWorkerRegistration:reg});
   if(!token)throw new Error('トークンが取得できませんでした');
-  var id=devId(token),chat=localStorage.getItem('fam-push-chat')!=='0';
-  await setDoc(UD('devices',id),{token:token,chat:chat,name:myName(),ua:navigator.userAgent.slice(0,120),ts:Date.now()});
+  var id=devId(token),chat=localStorage.getItem('fam-push-chat')!=='0',news=localStorage.getItem('fam-push-news')!=='0';
+  await setDoc(UD('devices',id),{token:token,chat:chat,news:news,name:myName(),ua:navigator.userAgent.slice(0,120),ts:Date.now()});
   localStorage.setItem('fam-push-on','1');localStorage.setItem('fam-push-dev',id);
   if(!quiet)banner(CATI+'通知をオンにしたにゃ');
  }catch(e){if(!quiet)banner('通知をオンにできませんでした：'+esc(e.code||e.message||''))}
@@ -349,7 +378,7 @@ async function pushOff(){
  pushState()}
 function pushChat(v){try{localStorage.setItem('fam-push-chat',v?'1':'0')}catch(e){}var id=localStorage.getItem('fam-push-dev');if(id)updateDoc(UD('devices',id),{chat:v}).catch(function(){})}
 function pushTest(){navigator.serviceWorker.ready.then(function(r){return r.showNotification('🐾 小西家',{body:'通知のテストだにゃ',icon:'icon-192.png',badge:'badge-96.png'})}).catch(function(e){banner('テスト表示できませんでした')})}
-Object.assign(window,{enablePush:enablePush,pushOff:pushOff,pushChat:pushChat,pushTest:pushTest,sendChat:sendChat,show:show,dl:dl,tg:tg,addTodo:addTodo,addEvent:addEvent,addRem:addRem,addMemo:addMemo,setCol:setCol,importLocal:importLocal,login:login,logout:logout,refreshApp:refreshApp,addGoal:addGoal,gtg:gtg,gdel:gdel,setGKind:setGKind,setGCol:setGCol,rxT:rxT,rxS:rxS,tglFut:tglFut});
+Object.assign(window,{pushNews:pushNews,enablePush:enablePush,pushOff:pushOff,pushChat:pushChat,pushTest:pushTest,sendChat:sendChat,show:show,dl:dl,tg:tg,addTodo:addTodo,addEvent:addEvent,addRem:addRem,addMemo:addMemo,setCol:setCol,importLocal:importLocal,login:login,logout:logout,refreshApp:refreshApp,addGoal:addGoal,gtg:gtg,gdel:gdel,setGKind:setGKind,setGCol:setGCol,rxT:rxT,rxS:rxS,tglFut:tglFut});
 $('i-date').value=ymd(new Date());
 $('i-rdate').value=ymd(new Date());
 drawDots();
@@ -359,7 +388,7 @@ var hh=location.hash.replace('#','');if(TT[hh])tab=hh;
 show(TT[tab]?tab:'today');render();
 onAuthStateChanged(auth,function(u){
  var on=!!u;$('login').style.display=on?'none':'block';$('app').style.display=on?'block':'none';$('nav').style.display=on?'flex':'none';
- if(on){err('lmsg','');$('i-who').value=((u.displayName||'家族').split(/\s+/)[0]).slice(0,6);showImport();listen();pushState();if(localStorage.getItem('fam-push-on')==='1'&&window.Notification&&Notification.permission==='granted')enablePush(true);setTimeout(function(){navCenter(curTab)},60)}else{stop()}
+ if(on){err('lmsg','');$('i-who').value=((u.displayName||'家族').split(/\s+/)[0]).slice(0,6);showImport();listen();pushState();loadWeather();if(localStorage.getItem('fam-push-on')==='1'&&window.Notification&&Notification.permission==='granted')enablePush(true);setTimeout(function(){navCenter(curTab)},60)}else{stop()}
 });
 setInterval(check,10000);
 </script></body></html>
