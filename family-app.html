@@ -298,7 +298,8 @@ function markRead(){if(S.chat.length){readTs=Math.max(readTs,S.chat[S.chat.lengt
 function onChat(){var me=myId(),mx=S.chat.length?(S.chat[S.chat.length-1].ts||0):0;
  if(!chatInit){chatInit=true;seen=mx}else{var nw=S.chat.filter(function(c){return (c.ts||0)>seen&&c.uid!==me});seen=Math.max(seen,mx);if(nw.length&&curTab!=='chat'){var c=nw[nw.length-1];banner(CATI+esc(c.who||'')+'さんからにゃ：'+esc(String(c.text||'').slice(0,30)))}}
  if(curTab==='chat')markRead();else updBadge()}
-function mkRems(id,d,tm,title,sh){var now=dtl(new Date()),dd=new Date(d+'T00:00');dd.setDate(dd.getDate()-1);var L=[[ymd(dd)+'T21:00','明日：'+title]];if(tm){L.push([dtl(new Date(new Date(d+'T'+tm).getTime()-3600000)),'1時間後：'+title])}else{L.push([d+'T08:00','今日：'+title])}L.forEach(function(x){if(x[0]>now)addDoc(sh?C('rems'):U('rems'),{text:x[1],at:x[0],ts:Date.now(),evId:id})})}
+function mkRems(id,d,tm,title,sh){var now=dtl(new Date()),dd=new Date(d+'T00:00');dd.setDate(dd.getDate()-1);var L=[[ymd(dd)+'T21:00','明日：'+title]];if(tm){L.push([dtl(new Date(new Date(d+'T'+tm).getTime()-3600000)),'1時間後：'+title])}else{L.push([d+'T08:00','今日：'+title])}if(tm){var evt=new Date(d+'T'+tm).getTime();if(evt>Date.now()&&dtl(new Date(evt-3600000))<now)L.push([dtl(new Date(Math.max(evt-600000,Date.now()))),'まもなく：'+title])}
+ L.forEach(function(x){if(x[0]>=now)addDoc(sh?C('rems'):U('rems'),{text:x[1],at:x[0],ts:Date.now(),evId:id})})}
 function sendChat(){var v=$('i-chat').value.trim();if(!v||!auth.currentUser)return;addDoc(C('chat'),{text:v,who:myName(),uid:auth.currentUser.uid,ts:Date.now()});$('i-chat').value=''}
 function stop(){chatInit=false;unsubs.forEach(function(u){u()});unsubs=[]}
 function denied(){stop();signOut(auth).then(function(){err('lmsg','このGoogleアカウントは許可されていません。')})}
@@ -347,7 +348,7 @@ async function pushOff(){
  try{unregDev();localStorage.setItem('fam-push-on','0');var M=await import('https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging.js');await M.deleteToken(M.getMessaging(app))}catch(e){}
  pushState()}
 function pushChat(v){try{localStorage.setItem('fam-push-chat',v?'1':'0')}catch(e){}var id=localStorage.getItem('fam-push-dev');if(id)updateDoc(UD('devices',id),{chat:v}).catch(function(){})}
-function pushTest(){navigator.serviceWorker.ready.then(function(r){return r.showNotification('🐾 小西家',{body:'通知のテストだにゃ',icon:'icon-192.png',badge:'icon-192.png'})}).catch(function(e){banner('テスト表示できませんでした')})}
+function pushTest(){navigator.serviceWorker.ready.then(function(r){return r.showNotification('🐾 小西家',{body:'通知のテストだにゃ',icon:'icon-192.png',badge:'badge-96.png'})}).catch(function(e){banner('テスト表示できませんでした')})}
 Object.assign(window,{enablePush:enablePush,pushOff:pushOff,pushChat:pushChat,pushTest:pushTest,sendChat:sendChat,show:show,dl:dl,tg:tg,addTodo:addTodo,addEvent:addEvent,addRem:addRem,addMemo:addMemo,setCol:setCol,importLocal:importLocal,login:login,logout:logout,refreshApp:refreshApp,addGoal:addGoal,gtg:gtg,gdel:gdel,setGKind:setGKind,setGCol:setGCol,rxT:rxT,rxS:rxS,tglFut:tglFut});
 $('i-date').value=ymd(new Date());
 $('i-rdate').value=ymd(new Date());
