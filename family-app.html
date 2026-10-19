@@ -148,6 +148,7 @@ details>summary{cursor:pointer;padding:6px 0}
 </section>
 
 <p id="imp" style="display:none;text-align:center;margin-top:24px"><button onclick="importLocal()">この端末の古いデータを共有に取り込む</button></p>
+<div id="wbox" style="margin-top:24px"></div>
 <div id="pushbox" style="margin-top:24px"></div>
 <p style="text-align:center;margin-top:24px"><button onclick="refreshApp()">最新の画面に更新</button> <button onclick="logout()">ログアウト</button></p>
 </main>
@@ -179,7 +180,7 @@ function ymd(d){return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate()
 function dtl(d){return ymd(d)+'T'+p2(d.getHours())+':'+p2(d.getMinutes())}
 function label(s){var d=new Date(s+'T00:00');return (d.getMonth()+1)+'月'+d.getDate()+'日（'+W[d.getDay()]+'）'}
 function hex(c,f){return /^#[0-9a-f]{6}$/i.test(c||'')?c:f}
-var S={todos:[],events:[],rems:[],memos:[],evS:[],evP:[],memS:[],memP:[],todS:[],todP:[],chat:[],remS:[],remP:[],goalP:[]},curTab='today',unsubs=[],fired={},rxOpen=null,futOpen=false,lastChatId='';
+var S={todos:[],events:[],rems:[],memos:[],evS:[],evP:[],memS:[],memP:[],todS:[],todP:[],chat:[],remS:[],remP:[],goalP:[],setP:[]},curTab='today',unsubs=[],fired={},rxOpen=null,futOpen=false,lastChatId='';
 try{fired=JSON.parse(localStorage.getItem('fam-fired')||'{}')}catch(e){}
 var GCOLORS=['#E8856A','#F0B340','#7BBF8E','#6BAED6','#B493D8','#E58FB0'],col=GCOLORS[0],gkind='long',gcol=null,RX=['👍','❤️','😂','🙏','🐾'];
 function err(id,m){$(id).textContent=m}
@@ -311,8 +312,8 @@ function mkRems(id,d,tm,title,sh){var now=dtl(new Date()),dd=new Date(d+'T00:00'
 function sendChat(){var v=$('i-chat').value.trim();if(!v||!auth.currentUser)return;addDoc(C('chat'),{text:v,who:myName(),uid:auth.currentUser.uid,ts:Date.now()});$('i-chat').value=''}
 function stop(){chatInit=false;unsubs.forEach(function(u){u()});unsubs=[]}
 function denied(){stop();signOut(auth).then(function(){err('lmsg','このGoogleアカウントは許可されていません。')})}
-function lc(ref,key,priv){return onSnapshot(ref,function(sn){S[key]=sn.docs.map(function(d){return Object.assign({id:d.id,_p:priv},d.data())});if(key==='todS'||key==='todP')S.todos=S.todS.concat(S.todP).sort(function(a,b){return (b.ts||0)-(a.ts||0)});if(key==='memS'||key==='memP')S.memos=S.memS.concat(S.memP).sort(function(a,b){return (b.ts||0)-(a.ts||0)});if(key==='evS'||key==='evP')S.events=S.evS.concat(S.evP);if(key==='remS'||key==='remP')S.rems=S.remS.concat(S.remP);if(key==='chat')S.chat.reverse();render();if(key==='chat'){onChat();if(curTab==='chat'){var lid=S.chat.length?S.chat[S.chat.length-1].id:'';if(lid!==lastChatId){lastChatId=lid;window.scrollTo(0,document.body.scrollHeight)}}}if(key==='remS'||key==='remP')check()},function(e){if(e.code==='permission-denied'){if(priv)banner('Firebaseのルールを更新してください');else denied()}})}
-function listen(){stop();unsubs=[lc(C('todos'),'todS',0),lc(U('todos'),'todP',1),lc(C('rems'),'remS',0),lc(U('rems'),'remP',1),lc(query(C('chat'),orderBy('ts','desc'),limit(100)),'chat',0),lc(C('events'),'evS',0),lc(U('events'),'evP',1),lc(C('memos'),'memS',0),lc(U('memos'),'memP',1),lc(U('goals'),'goalP',1)]}
+function lc(ref,key,priv){return onSnapshot(ref,function(sn){S[key]=sn.docs.map(function(d){return Object.assign({id:d.id,_p:priv},d.data())});if(key==='todS'||key==='todP')S.todos=S.todS.concat(S.todP).sort(function(a,b){return (b.ts||0)-(a.ts||0)});if(key==='memS'||key==='memP')S.memos=S.memS.concat(S.memP).sort(function(a,b){return (b.ts||0)-(a.ts||0)});if(key==='evS'||key==='evP')S.events=S.evS.concat(S.evP);if(key==='remS'||key==='remP')S.rems=S.remS.concat(S.remP);if(key==='chat')S.chat.reverse();render();if(key==='chat'){onChat();if(curTab==='chat'){var lid=S.chat.length?S.chat[S.chat.length-1].id:'';if(lid!==lastChatId){lastChatId=lid;window.scrollTo(0,document.body.scrollHeight)}}}if(key==='setP')wSetting();if(key==='remS'||key==='remP')check()},function(e){if(e.code==='permission-denied'){if(priv)banner('Firebaseのルールを更新してください');else denied()}})}
+function listen(){stop();unsubs=[lc(C('todos'),'todS',0),lc(U('todos'),'todP',1),lc(C('rems'),'remS',0),lc(U('rems'),'remP',1),lc(query(C('chat'),orderBy('ts','desc'),limit(100)),'chat',0),lc(C('events'),'evS',0),lc(U('events'),'evP',1),lc(C('memos'),'memS',0),lc(U('memos'),'memP',1),lc(U('goals'),'goalP',1),lc(U('settings'),'setP',1)]}
 function localData(){try{return JSON.parse(localStorage.getItem('fam-app-v1')||'null')}catch(e){return null}}
 function showImport(){var o=localData(),n=0;if(o)KS.forEach(function(k){n+=(o[k]||[]).length});$('imp').style.display=(n&&!localStorage.getItem('fam-app-imported'))?'block':'none'}
 function importLocal(){var o=localData();if(!o)return;var b=writeBatch(db),now=Date.now();
@@ -340,21 +341,26 @@ function newsLines(td){
  if(NEWS_W)L=L.concat(weatherLines(NEWS_W));else L.push(NEWS_WS==='err'?'天気を取得できませんでした（地域名を確認してください）':'天気を読み込み中…');
  return L}
 function newsCard(td){return '<div class="gcard" style="--gc:#E8856A;padding-bottom:10px;margin:8px 0 4px"><div class="gt">📰 家族ニュース</div>'+newsLines(td).map(function(l){return '<p class="sub" style="color:var(--tx);margin-top:4px">・'+esc(l)+'</p>'}).join('')+'</div>'}
+function geoSaved(){try{return JSON.parse(localStorage.getItem('fam-geo')||'null')}catch(e){return null}}
+async function findPlace(name){var names=[name],t=String(name).replace(/(都|道|府|県|市|区|町|村)$/,'');if(t&&t!==name)names.push(t);for(var i=0;i<names.length;i++){var g=await (await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(names[i])+'&count=1&language=ja&country_code=JP')).json();if(g.results&&g.results[0])return g.results[0]}return null}
 async function loadWeather(){
  try{
-  var td=ymd(new Date()),cfg={city:'東京'};
-  try{var r0=await fetch('family-config.json?'+Date.now());if(r0.ok)cfg=Object.assign(cfg,await r0.json())}catch(e){}
-  var c=JSON.parse(localStorage.getItem('fam-weather')||'null');
-  if(c&&c.date===td&&c.city===cfg.city){NEWS_W=c.w;NEWS_WS='ok';rToday();return}
-  var pos=null;
-  if(typeof cfg.lat==='number'&&typeof cfg.lon==='number')pos={latitude:cfg.lat,longitude:cfg.lon};
-  else{var names=[cfg.city],t=String(cfg.city).replace(/(都|道|府|県|市|区|町|村)$/,'');if(t&&t!==cfg.city)names.push(t);
-   for(var i=0;i<names.length&&!pos;i++){var g=await (await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(names[i])+'&count=1&language=ja&country_code=JP')).json();if(g.results&&g.results[0])pos=g.results[0]}}
+  var td=ymd(new Date()),pos=null,name='',sv=geoSaved();
+  if(sv&&typeof sv.lat==='number'){pos={latitude:sv.lat,longitude:sv.lon};name=sv.city||'現在地'}
+  else{var cfg={city:'東京'};try{var r0=await fetch('family-config.json?'+Date.now());if(r0.ok)cfg=Object.assign(cfg,await r0.json())}catch(e){}
+   name=cfg.city;if(typeof cfg.lat==='number'&&typeof cfg.lon==='number')pos={latitude:cfg.lat,longitude:cfg.lon};else pos=await findPlace(cfg.city)}
   if(!pos)throw new Error('geo');
+  var key=pos.latitude+','+pos.longitude,c=JSON.parse(localStorage.getItem('fam-weather')||'null');
+  if(c&&c.date===td&&c.key===key){NEWS_W={name:name,d:c.d};NEWS_WS='ok';rToday();return}
   var f=await (await fetch('https://api.open-meteo.com/v1/forecast?latitude='+pos.latitude+'&longitude='+pos.longitude+'&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=7')).json();
   if(!f.daily)throw new Error('forecast');
-  NEWS_W={name:cfg.city,d:f.daily};NEWS_WS='ok';localStorage.setItem('fam-weather',JSON.stringify({date:td,city:cfg.city,w:NEWS_W}));rToday();
+  NEWS_W={name:name,d:f.daily};NEWS_WS='ok';localStorage.setItem('fam-weather',JSON.stringify({date:td,key:key,d:f.daily}));rToday();
  }catch(e){NEWS_WS='err';rToday()}}
+function weatherBox(){var el=$('wbox');if(!el)return;var g=geoSaved();el.innerHTML='<p class="h" style="margin-top:0">天気の地域（自分用）</p><p class="sub" style="margin-bottom:8px">いまの地域：'+(g?esc(g.city):'未設定（家族の初期設定の地域）')+'</p><div class="row"><input id="i-wcity" placeholder="市町村名（例：和歌山市）"><button class="pri" onclick="saveCity()">保存</button></div><div class="row"><button style="flex:1" onclick="useHere()">📍 現在地を使う</button></div><p class="sub">現在地は、押した時点の場所（だいたい1km四方）を記録します。</p><p class="err" id="e-wcity"></p>'}
+async function saveGeo(g){try{localStorage.setItem('fam-geo',JSON.stringify(g));localStorage.removeItem('fam-weather')}catch(e){}NEWS_W=null;NEWS_WS='loading';weatherBox();rToday();loadWeather();try{await setDoc(UD('settings','weather'),{city:g.city,lat:g.lat,lon:g.lon,ts:Date.now()})}catch(e){err('e-wcity','この端末には保存しました（朝の通知にも使うには、Firebaseのルール更新が必要です）')}}
+async function saveCity(){var v=$('i-wcity').value.trim();if(!v){err('e-wcity','市町村名を入れてください');return}err('e-wcity','探しています…');try{var pos=await findPlace(v);if(!pos){err('e-wcity','見つかりませんでした。「和歌山」のように、市などをつけない書き方もためしてください');return}await saveGeo({city:v,lat:Math.round(pos.latitude*100)/100,lon:Math.round(pos.longitude*100)/100})}catch(e){err('e-wcity','探せませんでした。通信を確認してください')}}
+function useHere(){if(!navigator.geolocation){err('e-wcity','この端末では現在地が使えません');return}err('e-wcity','現在地を探しています…');navigator.geolocation.getCurrentPosition(function(p){saveGeo({city:'現在地',lat:Math.round(p.coords.latitude*100)/100,lon:Math.round(p.coords.longitude*100)/100})},function(){err('e-wcity','現在地を取得できませんでした（位置情報の許可を確認してください）')},{timeout:15000,maximumAge:600000})}
+function wSetting(){var w=S.setP.filter(function(x){return x.id==='weather'})[0];if(w&&typeof w.lat==='number'){var cur=geoSaved();if(!cur||cur.lat!==w.lat||cur.lon!==w.lon||cur.city!==w.city){try{localStorage.setItem('fam-geo',JSON.stringify({city:w.city,lat:w.lat,lon:w.lon}))}catch(e){}weatherBox();loadWeather()}}}
 function pushNews(v){try{localStorage.setItem('fam-push-news',v?'1':'0')}catch(e){}var id=localStorage.getItem('fam-push-dev');if(id)updateDoc(UD('devices',id),{news:v}).catch(function(){})}
 /* ---- アプリを閉じていても届く通知（このスマホの登録） ---- */
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(function(){});
@@ -389,7 +395,7 @@ async function pushOff(){
  pushState()}
 function pushChat(v){try{localStorage.setItem('fam-push-chat',v?'1':'0')}catch(e){}var id=localStorage.getItem('fam-push-dev');if(id)updateDoc(UD('devices',id),{chat:v}).catch(function(){})}
 function pushTest(){navigator.serviceWorker.ready.then(function(r){return r.showNotification('🐾 小西家',{body:'通知のテストだにゃ',icon:'icon-192.png',badge:'badge-96.png'})}).catch(function(e){banner('テスト表示できませんでした')})}
-Object.assign(window,{pushNews:pushNews,enablePush:enablePush,pushOff:pushOff,pushChat:pushChat,pushTest:pushTest,sendChat:sendChat,show:show,dl:dl,tg:tg,addTodo:addTodo,addEvent:addEvent,addRem:addRem,addMemo:addMemo,setCol:setCol,importLocal:importLocal,login:login,logout:logout,refreshApp:refreshApp,addGoal:addGoal,gtg:gtg,gdel:gdel,setGKind:setGKind,setGCol:setGCol,rxT:rxT,rxS:rxS,tglFut:tglFut});
+Object.assign(window,{saveCity:saveCity,useHere:useHere,pushNews:pushNews,enablePush:enablePush,pushOff:pushOff,pushChat:pushChat,pushTest:pushTest,sendChat:sendChat,show:show,dl:dl,tg:tg,addTodo:addTodo,addEvent:addEvent,addRem:addRem,addMemo:addMemo,setCol:setCol,importLocal:importLocal,login:login,logout:logout,refreshApp:refreshApp,addGoal:addGoal,gtg:gtg,gdel:gdel,setGKind:setGKind,setGCol:setGCol,rxT:rxT,rxS:rxS,tglFut:tglFut});
 $('i-date').value=ymd(new Date());
 $('i-rdate').value=ymd(new Date());
 drawDots();
@@ -399,7 +405,7 @@ var hh=location.hash.replace('#','');if(TT[hh])tab=hh;
 show(TT[tab]?tab:'today');render();
 onAuthStateChanged(auth,function(u){
  var on=!!u;$('login').style.display=on?'none':'block';$('app').style.display=on?'block':'none';$('nav').style.display=on?'flex':'none';
- if(on){err('lmsg','');$('i-who').value=((u.displayName||'家族').split(/\s+/)[0]).slice(0,6);showImport();listen();pushState();loadWeather();if(localStorage.getItem('fam-push-on')==='1'&&window.Notification&&Notification.permission==='granted')enablePush(true);setTimeout(function(){navCenter(curTab)},60)}else{stop()}
+ if(on){err('lmsg','');$('i-who').value=((u.displayName||'家族').split(/\s+/)[0]).slice(0,6);showImport();listen();pushState();weatherBox();loadWeather();if(localStorage.getItem('fam-push-on')==='1'&&window.Notification&&Notification.permission==='granted')enablePush(true);setTimeout(function(){navCenter(curTab)},60)}else{stop()}
 });
 setInterval(check,10000);
 </script></body></html>
