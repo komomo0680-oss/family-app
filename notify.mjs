@@ -97,23 +97,36 @@ function eff(e, td) {
 const dayDiff = (a, b) => Math.round((Date.parse(a + 'T00:00:00Z') - Date.parse(b + 'T00:00:00Z')) / 864e5);
 const WC = (c) => (c === 0 ? '快晴' : c <= 2 ? '晴れ' : c === 3 ? 'くもり' : c <= 48 ? '霧' : c <= 57 ? '霧雨' : c <= 67 ? '雨' : c <= 77 ? '雪' : c <= 82 ? 'にわか雨' : c <= 86 ? 'にわか雪' : '雷雨');
 const isRain = (c, p) => (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95 || p >= 60;
-async function getWeather() {
+const fcMemo = new Map();
+async function forecast(pos) {
+  const key = pos.latitude + ',' + pos.longitude;
+  if (fcMemo.has(key)) return fcMemo.get(key);
+  let r = null;
   try {
-    let pos = null;
-    if (typeof cfg.lat === 'number' && typeof cfg.lon === 'number') pos = { latitude: cfg.lat, longitude: cfg.lon };
+    const w = await (await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + pos.latitude + '&longitude=' + pos.longitude + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=7')).json();
+    r = w.daily || null;
+  } catch (e) { console.log('天気の取得に失敗：' + e.message); }
+  fcMemo.set(key, r);
+  return r;
+}
+let defPos;
+async function getDefaultPos() {
+  if (defPos !== undefined) return defPos;
+  defPos = null;
+  try {
+    if (typeof cfg.lat === 'number' && typeof cfg.lon === 'number') defPos = { latitude: cfg.lat, longitude: cfg.lon };
     else {
       const names = [cfg.city, String(cfg.city).replace(/(都|道|府|県|市|区|町|村)$/, '')].filter((v, i, a) => v && a.indexOf(v) === i);
       for (const nm of names) {
         const g = await (await fetch('https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(nm) + '&count=1&language=ja&country_code=JP')).json();
-        if (g.results && g.results[0]) { pos = g.results[0]; break; }
+        if (g.results && g.results[0]) { defPos = g.results[0]; break; }
       }
     }
-    if (!pos) { console.log('天気の地域が見つかりません：' + cfg.city); return null; }
-    const w = await (await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + pos.latitude + '&longitude=' + pos.longitude + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=7')).json();
-    return w.daily || null;
-  } catch (e) { console.log('天気の取得に失敗：' + e.message); return null; }
+  } catch (e) { console.log('地域の取得に失敗：' + e.message); }
+  if (!defPos) console.log('天気の地域が見つかりません：' + cfg.city);
+  return defPos;
 }
-function newsLines(events, todos, w, td) {
+function newsLines(events, todos, w, td, cityName) {
   const L = [];
   const evs = events.map((e) => ({ e, d: eff(e, td) })).filter((o) => o.d);
   const today = evs.filter((o) => o.d === td).sort((a, b) => ((a.e.time || '') < (b.e.time || '') ? -1 : 1));
@@ -125,7 +138,7 @@ function newsLines(events, todos, w, td) {
   const n = todos.filter((x) => !x.d).length;
   L.push(n ? 'TODO 未完了 ' + n + '件' : 'TODOはぜんぶ終わっています');
   if (w) {
-    L.push('今日の' + cfg.city + 'は' + WC(w.weather_code[0]) + '　最高' + Math.round(w.temperature_2m_max[0]) + '°　最低' + Math.round(w.temperature_2m_min[0]) + '°　降水' + w.precipitation_probability_max[0] + '%');
+    L.push('今日の' + cityName + 'は' + WC(w.weather_code[0]) + '　最高' + Math.round(w.temperature_2m_max[0]) + '°　最低' + Math.round(w.temperature_2m_min[0]) + '°　降水' + w.precipitation_probability_max[0] + '%');
     const r = w.weather_code.filter((c, i) => isRain(c, w.precipitation_probability_max[i])).length;
     if (r) L.push('今週は雨予報（' + r + '日）');
   }
@@ -136,15 +149,19 @@ const hourJ = new Date(now + TZ_HOURS * 3600e3).getUTCHours();
 if (cfg.news !== false && hourJ >= cfg.newsHour && hourJ < cfg.newsHour + 3) {
   const [sEv, sTd] = await Promise.all([fam.collection('events').get(), fam.collection('todos').get()]);
   const shared = { ev: sEv.docs.map((d) => d.data()), td: sTd.docs.map((d) => d.data()) };
-  let weather;
   for (const u of userRefs) {
     const mine = devices.filter((x) => x.uid === u.id && x.news !== false);
     if (!mine.length) continue;
     const flag = u.collection('newsSent').doc(todayStr);
     if ((await flag.get()).exists) continue;
     const [pEv, pTd] = await Promise.all([u.collection('events').get(), u.collection('todos').get()]);
-    if (weather === undefined) weather = await getWeather();
-    const lines = newsLines(shared.ev.concat(pEv.docs.map((d) => d.data())), shared.td.concat(pTd.docs.map((d) => d.data())), weather, todayStr);
+    const sd = await u.collection('settings').doc('weather').get();
+    const sv = sd.exists ? sd.data() : null;
+    let pos, cityName;
+    if (sv && typeof sv.lat === 'number') { pos = { latitude: sv.lat, longitude: sv.lon }; cityName = sv.city || '現在地'; }
+    else { pos = await getDefaultPos(); cityName = cfg.city; }
+    const weather = pos ? await forecast(pos) : null;
+    const lines = newsLines(shared.ev.concat(pEv.docs.map((d) => d.data())), shared.td.concat(pTd.docs.map((d) => d.data())), weather, todayStr, cityName);
     const [, mm, dd] = todayStr.split('-');
     await send(mine, '📰 家族ニュース ' + +mm + '/' + +dd, lines.map((l) => '・' + l).join('\n'), 'news-' + todayStr);
     await flag.set({ ts: now });
