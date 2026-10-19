@@ -93,6 +93,7 @@ details>summary{cursor:pointer;padding:6px 0}
 <p class="h" style="margin-top:2px">🎯 個人の大目標</p>
 <div id="nc-goals"></div>
 <p class="h">📌 お知らせ</p>
+<div id="nc-ev"></div>
 <div id="nc-news"></div>
 <p class="h">✅ TODO</p>
 <div class="row"><input id="i-todo" placeholder="牛乳を買う"><button class="pri" onclick="addTodo()">追加</button></div>
@@ -258,7 +259,7 @@ function rToday(){
  var h='';
  function trow(bar,title,sub,extra){return '<div class="item">'+(bar?'<span class="bar" style="background:'+bar+'"></span>':'')+'<div class="t"><div>'+title+'</div>'+(sub?'<p class="sub">'+sub+'</p>':'')+'</div>'+(extra||'')+'</div>'}
  var evs=S.events.map(function(e){return {e:e,d:effDate(e)}}).filter(function(o){return o.d===td}).sort(function(a,b){return (a.e.time||'')<(b.e.time||'')?-1:1});
- if(!evs.length)h+='<p class="h">今日の予定</p><p class="sub">ありません</p>';else h+='<p class="h">今日の予定</p>'+evs.map(function(o){var e=o.e;return trow(hex(e.color,'var(--bd)'),(e.special?'🎂 ':'')+(e.countdown?'⏳ ':'')+esc(e.title),(e.time||'終日')+(e.note?'　'+esc(e.note):''),'<span class="who">'+esc(e.who||'')+'</span>')}).join('');
+ $('nc-ev').innerHTML=evs.length?evs.map(function(o){var e=o.e;return '<p class="nl">・<b>'+(e.time||'終日')+'</b>　'+(e.special?'🎂 ':'')+(e.countdown?'⏳ ':'')+esc(e.title)+(e.who?' <span class="who">'+esc(e.who)+'</span>':'')+(e.note?'<br><span class="sub">'+esc(e.note)+'</span>':'')+'</p>'}).join(''):'<p class="nl">・今日の予定はありません</p>';
  var rm=todayRems();
  if(rm.length)h+='<p class="h">今日のリマインド</p>'+rm.map(function(o){var r=o.r;return trow(null,esc(r.text),(r.allday?'終日':r.at.slice(11))+(fired[r.id]?'　通知済み':''),'')}).join('');
  $('l-today').innerHTML=h}
