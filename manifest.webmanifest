@@ -49,9 +49,9 @@
       ]
     },
     {
-      "name": "TODO",
-      "short_name": "TODO",
-      "url": "./family-app.html#todo",
+      "name": "リマインド",
+      "short_name": "リマインド",
+      "url": "./family-app.html#rem",
       "icons": [
         {
           "src": "icon-192.png",
