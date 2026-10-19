@@ -90,8 +90,7 @@ details>summary{cursor:pointer;padding:6px 0}
 <section id="s-today">
 <p class="sub" id="news-date" style="margin-bottom:6px"></p>
 <div class="gcard newscard" style="--gc:#E8856A">
-<div class="gt" style="font-size:18px">📰 家族ニュース</div>
-<p class="h" style="margin-top:14px">🎯 個人の大目標</p>
+<p class="h" style="margin-top:2px">🎯 個人の大目標</p>
 <div id="nc-goals"></div>
 <p class="h">📌 お知らせ</p>
 <div id="nc-news"></div>
@@ -259,7 +258,7 @@ function rToday(){
  var h='';
  function trow(bar,title,sub,extra){return '<div class="item">'+(bar?'<span class="bar" style="background:'+bar+'"></span>':'')+'<div class="t"><div>'+title+'</div>'+(sub?'<p class="sub">'+sub+'</p>':'')+'</div>'+(extra||'')+'</div>'}
  var evs=S.events.map(function(e){return {e:e,d:effDate(e)}}).filter(function(o){return o.d===td}).sort(function(a,b){return (a.e.time||'')<(b.e.time||'')?-1:1});
- if(evs.length)h+='<p class="h">今日の予定</p>'+evs.map(function(o){var e=o.e;return trow(hex(e.color,'var(--bd)'),(e.special?'🎂 ':'')+(e.countdown?'⏳ ':'')+esc(e.title),(e.time||'終日')+(e.note?'　'+esc(e.note):''),'<span class="who">'+esc(e.who||'')+'</span>')}).join('');
+ if(!evs.length)h+='<p class="h">今日の予定</p><p class="sub">ありません</p>';else h+='<p class="h">今日の予定</p>'+evs.map(function(o){var e=o.e;return trow(hex(e.color,'var(--bd)'),(e.special?'🎂 ':'')+(e.countdown?'⏳ ':'')+esc(e.title),(e.time||'終日')+(e.note?'　'+esc(e.note):''),'<span class="who">'+esc(e.who||'')+'</span>')}).join('');
  var rm=todayRems();
  if(rm.length)h+='<p class="h">今日のリマインド</p>'+rm.map(function(o){var r=o.r;return trow(null,esc(r.text),(r.allday?'終日':r.at.slice(11))+(fired[r.id]?'　通知済み':''),'')}).join('');
  $('l-today').innerHTML=h}
@@ -333,11 +332,7 @@ function isRain(c,p){return (c>=51&&c<=67)||(c>=80&&c<=82)||c>=95||p>=60}
 function weatherLines(w){var d=w.d,L=[];L.push('今日の'+w.name+'は'+WC(d.weather_code[0])+'　最高'+Math.round(d.temperature_2m_max[0])+'°　最低'+Math.round(d.temperature_2m_min[0])+'°　降水'+d.precipitation_probability_max[0]+'%');var r=0;for(var i=0;i<d.weather_code.length;i++)if(isRain(d.weather_code[i],d.precipitation_probability_max[i]))r++;if(r)L.push('今週は雨予報（'+r+'日）');return L}
 function newsLines(td){
  var L=[],evs=S.events.map(function(e){return {e:e,d:effDate(e)}});
- var today=evs.filter(function(o){return o.d===td}).sort(function(a,b){return (a.e.time||'')<(b.e.time||'')?-1:1});
- if(today.length)L.push('今日の予定 '+today.length+'件：'+today.slice(0,3).map(function(o){return o.e.title+(o.e.time?'（'+o.e.time+'）':'')}).join('、')+(today.length>3?' ほか':''));
- else L.push('今日の予定はありません');
  evs.filter(function(o){var k=dayDiff(o.d,td);return (o.e.special||o.e.countdown)&&k>0&&k<=(o.e.special?14:30)}).sort(function(a,b){return dayDiff(a.d,td)-dayDiff(b.d,td)}).slice(0,3).forEach(function(o){var k=dayDiff(o.d,td);L.push(k===1?'明日は'+o.e.title:o.e.title+'まであと'+k+'日')});
- var n=S.todos.filter(function(x){return !x.d}).length;L.push(n?'TODO 未完了 '+n+'件':'TODOはぜんぶ終わっています');
  if(NEWS_W)L=L.concat(weatherLines(NEWS_W));else L.push(NEWS_WS==='err'?'天気を取得できませんでした（地域名を確認してください）':'天気を読み込み中…');
  return L}
 function newsCard(td){return '<div class="gcard" style="--gc:#E8856A;padding-bottom:10px;margin:8px 0 4px"><div class="gt">📰 家族ニュース</div>'+newsLines(td).map(function(l){return '<p class="sub" style="color:var(--tx);margin-top:4px">・'+esc(l)+'</p>'}).join('')+'</div>'}
