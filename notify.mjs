@@ -35,7 +35,7 @@ console.log(`登録された端末：${devices.length}台`);
 if (!devices.length) process.exit(0);
 
 async function send(list, title, body, tag) {
-  if (!list.length) return;
+  if (!list.length) return 0;
   const tokens = [...new Set(list.map((d) => d.token))];
   const res = await admin.messaging().sendEachForMulticast({
     tokens,
@@ -51,7 +51,9 @@ async function send(list, title, body, tag) {
     }
   });
   for (const d of list) if (dead.has(d.token)) await d.ref.delete().catch(() => {});
-  console.log(`送信：${title} ${body.slice(0, 20)}（${tokens.length}台）`);
+  const okCount = res.responses.filter((r) => r.success).length;
+  console.log(`送信：${title} ${body.slice(0, 20)}（${okCount}/${tokens.length}台に成功）`);
+  return okCount;
 }
 
 async function due(col) {
@@ -61,16 +63,16 @@ async function due(col) {
 
 // 1) 家族みんなのリマインド（共有の予定から作られたもの）
 for (const d of await due(fam.collection('rems'))) {
-  await send(devices, '🐾 小西家', String(d.data().text || ''), 'rem-' + d.id);
-  await d.ref.update({ pushed: true });
+  const ok = await send(devices, '🐾 小西家', String(d.data().text || ''), 'rem-' + d.id);
+  if (ok > 0) await d.ref.update({ pushed: true });
 }
 // 2) 自分だけのリマインド
 for (const u of userRefs) {
   const mine = devices.filter((x) => x.uid === u.id);
   if (!mine.length) continue;
   for (const d of await due(u.collection('rems'))) {
-    await send(mine, '🐾 小西家', String(d.data().text || ''), 'rem-' + d.id);
-    await d.ref.update({ pushed: true });
+    const ok = await send(mine, '🐾 小西家', String(d.data().text || ''), 'rem-' + d.id);
+    if (ok > 0) await d.ref.update({ pushed: true });
   }
 }
 // 3) チャット（書いた本人以外に通知）
@@ -79,8 +81,8 @@ for (const d of cs.docs) {
   const c = d.data();
   if (c.pushed) continue;
   const targets = devices.filter((x) => x.uid !== c.uid && x.chat);
-  await send(targets, '💬 ' + (c.who || '家族'), String(c.text || '').slice(0, 80), 'chat-' + d.id);
-  await d.ref.update({ pushed: true });
+  const ok = await send(targets, '💬 ' + (c.who || '家族'), String(c.text || '').slice(0, 80), 'chat-' + d.id);
+  if (ok > 0 || !targets.length) await d.ref.update({ pushed: true });
 }
 
 // 4) 朝の家族ニュース（1日1回、設定の時間になったら。共有の分＋その人だけの分をまとめる）
@@ -163,8 +165,8 @@ if (cfg.news !== false && hourJ >= cfg.newsHour && hourJ < cfg.newsHour + 3) {
     const weather = pos ? await forecast(pos) : null;
     const lines = newsLines(shared.ev.concat(pEv.docs.map((d) => d.data())), shared.td.concat(pTd.docs.map((d) => d.data())), weather, todayStr, cityName);
     const [, mm, dd] = todayStr.split('-');
-    await send(mine, '📰 家族ニュース ' + +mm + '/' + +dd, lines.map((l) => '・' + l).join('\n'), 'news-' + todayStr);
-    await flag.set({ ts: now });
+    const ok = await send(mine, '📰 家族ニュース ' + +mm + '/' + +dd, lines.map((l) => '・' + l).join('\n'), 'news-' + todayStr);
+    if (ok > 0) await flag.set({ ts: now }); // 届かなかったときは、次の実行でもう一度ためす
   }
 }
 console.log('完了');
