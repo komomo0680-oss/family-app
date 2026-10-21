@@ -61,11 +61,7 @@ async function due(col) {
   return s.docs.filter((d) => !d.data().pushed);
 }
 
-// 1) 家族みんなのリマインド（共有の予定から作られたもの）
-for (const d of await due(fam.collection('rems'))) {
-  const ok = await send(devices, '🐾 小西家', String(d.data().text || ''), 'rem-' + d.id);
-  if (ok > 0) await d.ref.update({ pushed: true });
-}
+// 1) （家族みんなへのリマインドは、送らない。リマインドは本人にだけ通知する）
 // 2) 自分だけのリマインド
 for (const u of userRefs) {
   const mine = devices.filter((x) => x.uid === u.id);

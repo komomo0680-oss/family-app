@@ -140,6 +140,7 @@ details>summary{cursor:pointer;padding:6px 0}
 <div class="row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="i-mshare" style="width:20px;height:20px"> 家族と共有する</label></div>
 <div class="row"><button class="pri" style="flex:1" onclick="addMemo()">メモを保存</button></div>
 <p class="err" id="e-memo"></p><div id="l-memo"></div>
+<div id="wbox" style="margin-top:28px"></div>
 </section>
 
 <section id="s-chat">
@@ -148,7 +149,6 @@ details>summary{cursor:pointer;padding:6px 0}
 </section>
 
 <p id="imp" style="display:none;text-align:center;margin-top:24px"><button onclick="importLocal()">この端末の古いデータを共有に取り込む</button></p>
-<div id="wbox" style="margin-top:24px"></div>
 <div id="pushbox" style="margin-top:24px"></div>
 <p style="text-align:center;margin-top:24px"><button onclick="refreshApp()">最新の画面に更新</button> <button onclick="logout()">ログアウト</button></p>
 </main>
@@ -235,9 +235,10 @@ function addEvent(){var d=$('i-date').value,t=$('i-etitle').value.trim();if(!d){
 /* ---- リマインド（自分だけ・当日のみ表示） ---- */
 function addRem(){var t=$('i-rtext').value.trim(),d=$('i-rdate').value,tm=$('i-rtime').value;if(!t){err('e-rem','内容を入力してください');return}if(!d){err('e-rem','日付を選んでください');return}addDoc(U('rems'),{text:t,at:d+'T'+(tm||'08:00'),allday:!tm,ts:Date.now()});$('i-rtext').value='';$('i-rtime').value=''}
 function remKey(r){return r.allday?'00:00':(r.at||'').slice(11)}
-function todayRems(){var td=ymd(new Date());return S.rems.map(function(r,i){return {r:r,i:i}}).filter(function(o){return (o.r.at||'').slice(0,10)===td}).sort(function(a,b){var x=remKey(a.r),y=remKey(b.r);return x<y?-1:(x>y?1:0)})}
+function todayRems(){var td=ymd(new Date());return S.rems.map(function(r,i){return {r:r,i:i}}).filter(function(o){return o.r._p&&(o.r.at||'').slice(0,10)===td}).sort(function(a,b){var x=remKey(a.r),y=remKey(b.r);return x<y?-1:(x>y?1:0)})}
 function remRow(o,withDate){var r=o.r,f=fired[r.id];return '<div class="item" style="'+(f?'opacity:.55':'')+'"><div class="t"><div>'+esc(r.text)+'</div><p class="sub">'+(withDate?label(r.at.slice(0,10))+' ':'')+(r.allday?'終日':r.at.slice(11))+(f?'　通知済み':'')+'</p></div>'+xb('rems',o.i)+'</div>'}
 function tglFut(el){futOpen=el.open}
+var pastOpen=false;function tglPast(el){pastOpen=el.open}
 
 /* ---- メモ（共有は名前で表示） ---- */
 function addMemo(){var v=$('i-memo').value.trim();if(!v){err('e-memo','メモを入力してください');return}addDoc($('i-mshare').checked?C('memos'):U('memos'),{t:v,who:myName(),uid:myId(),ts:Date.now()});$('i-memo').value=''}
@@ -281,10 +282,10 @@ function rEvent(){
  var idx=S.events.map(function(e,i){return {e:e,i:i,d:effDate(e)}}).sort(function(a,b){return (a.d+(a.e.time||''))<(b.d+(b.e.time||''))?-1:1});
  var up=idx.filter(function(o){return o.d>=td}),past=idx.filter(function(o){return o.d<td}).reverse();
  function ev(o,dim){var e=o.e,sp=!!e.special;return '<div class="item'+(sp?' sp':'')+'" style="'+(dim?'opacity:.5':'')+'"><span class="bar" style="background:'+hex(e.color,'var(--bd)')+'"></span><div class="t"><div>'+(sp?'🎂 ':'')+(e.countdown?'⏳ ':'')+esc(e.title)+'</div><p class="sub">'+label(o.d)+(e.time?' '+e.time:'')+(e.yearly?'（毎年）':'')+'</p>'+(e.note?'<p class="sub" style="color:var(--tx)">'+esc(e.note)+'</p>':'')+'</div>'+(o.d===td?'<span class="badge">今日</span>':'')+(e._p?'<span class="who">自分のみ</span>':'')+'<span class="who">'+esc(e.who||'')+'</span>'+xb('events',o.i)+'</div>'}
- $('l-event').innerHTML=(up.length?up.map(function(o){return ev(o,false)}).join(''):empty('これからの予定はないにゃ'))+(past.length?'<p class="h">過去の予定</p>'+past.map(function(o){return ev(o,true)}).join(''):'')}
+ $('l-event').innerHTML=(up.length?up.map(function(o){return ev(o,false)}).join(''):empty('これからの予定はないにゃ'))+(past.length?'<details'+(pastOpen?' open':'')+' ontoggle="tglPast(this)" style="margin-top:16px"><summary class="sub">過去の予定（'+past.length+'件）</summary>'+past.map(function(o){return ev(o,true)}).join('')+'</details>':'')}
 function rRem(){
  var td=ymd(new Date()),rm=todayRems();
- var later=S.rems.map(function(r,i){return {r:r,i:i}}).filter(function(o){return (o.r.at||'').slice(0,10)>td}).sort(function(a,b){return a.r.at<b.r.at?-1:1});
+ var later=S.rems.map(function(r,i){return {r:r,i:i}}).filter(function(o){return o.r._p&&(o.r.at||'').slice(0,10)>td}).sort(function(a,b){return a.r.at<b.r.at?-1:1});
  $('l-rem').innerHTML=(rm.length?rm.map(function(o){return remRow(o,false)}).join(''):empty('今日のリマインドはないにゃ'))+(later.length?'<details'+(futOpen?' open':'')+' ontoggle="tglFut(this)" style="margin-top:8px"><summary class="sub">明日以降のリマインド（'+later.length+'件）</summary>'+later.map(function(o){return remRow(o,true)}).join('')+'</details>':'')}
 function rMemo(){$('l-memo').innerHTML=S.memos.length?S.memos.map(function(m,i){return '<div class="item" style="align-items:flex-start"><span class="t" style="white-space:pre-wrap">'+esc(m.t)+'</span>'+(m._p?'<span class="who">自分のみ</span>':'<span class="badge">'+esc(m.who||'共有')+'</span>')+xb('memos',i)+'</div>'}).join(''):empty('メモはまだないにゃ')}
 function rChat(){
@@ -297,7 +298,7 @@ function rChat(){
 function render(){rToday();rTodo();rGoal();rEvent();rRem();rMemo();rChat()}
 
 /* ---- 通知 ---- */
-function check(){var now=dtl(new Date()),old=dtl(new Date(Date.now()-864e5)),hit=[],ch=false;S.rems.forEach(function(r){if(fired[r.id]||r.at>now)return;fired[r.id]=1;ch=true;if(r.at>=old)hit.push(r.text)});if(ch){try{localStorage.setItem('fam-fired',JSON.stringify(fired))}catch(e){}if(hit.length)banner(CATI+hit.map(esc).join('、')+' の時間だにゃ');render()}}
+function check(){var now=dtl(new Date()),old=dtl(new Date(Date.now()-864e5)),hit=[],ch=false;S.rems.forEach(function(r){if(!r._p||fired[r.id]||r.at>now)return;fired[r.id]=1;ch=true;if(r.at>=old)hit.push(r.text)});if(ch){try{localStorage.setItem('fam-fired',JSON.stringify(fired))}catch(e){}if(hit.length)banner(CATI+hit.map(esc).join('、')+' の時間だにゃ');render()}}
 var chatInit=false,seen=0,readTs=+(localStorage.getItem('fam-chat-read')||0),CATI='<svg width="22" height="22" style="vertical-align:middle"><use href="#cat"/></svg> ';
 if(!readTs){readTs=Date.now();try{localStorage.setItem('fam-chat-read',readTs)}catch(e){}}
 function myId(){return auth.currentUser?auth.currentUser.uid:''}
@@ -308,7 +309,7 @@ function onChat(){var me=myId(),mx=S.chat.length?(S.chat[S.chat.length-1].ts||0)
  if(!chatInit){chatInit=true;seen=mx}else{var nw=S.chat.filter(function(c){return (c.ts||0)>seen&&c.uid!==me});seen=Math.max(seen,mx);if(nw.length&&curTab!=='chat'){var c=nw[nw.length-1];banner(CATI+esc(c.who||'')+'さんからにゃ：'+esc(String(c.text||'').slice(0,30)))}}
  if(curTab==='chat')markRead();else updBadge()}
 function mkRems(id,d,tm,title,sh){var now=dtl(new Date()),dd=new Date(d+'T00:00');dd.setDate(dd.getDate()-1);var L=[[ymd(dd)+'T21:00','明日：'+title]];if(tm){L.push([dtl(new Date(new Date(d+'T'+tm).getTime()-3600000)),'1時間後：'+title])}else{L.push([d+'T08:00','今日：'+title])}if(tm){var evt=new Date(d+'T'+tm).getTime();if(evt>Date.now()&&dtl(new Date(evt-3600000))<now)L.push([dtl(new Date(Math.max(evt-600000,Date.now()))),'まもなく：'+title])}
- L.forEach(function(x){if(x[0]>=now)addDoc(sh?C('rems'):U('rems'),{text:x[1],at:x[0],ts:Date.now(),evId:id})})}
+ L.forEach(function(x){if(x[0]>=now)addDoc(U('rems'),{text:x[1],at:x[0],ts:Date.now(),evId:id})})}
 function sendChat(){var v=$('i-chat').value.trim();if(!v||!auth.currentUser)return;addDoc(C('chat'),{text:v,who:myName(),uid:auth.currentUser.uid,ts:Date.now()});$('i-chat').value=''}
 function stop(){chatInit=false;unsubs.forEach(function(u){u()});unsubs=[]}
 function denied(){stop();signOut(auth).then(function(){err('lmsg','このGoogleアカウントは許可されていません。')})}
@@ -391,7 +392,7 @@ async function pushOff(){
  pushState()}
 function pushChat(v){try{localStorage.setItem('fam-push-chat',v?'1':'0')}catch(e){}var id=localStorage.getItem('fam-push-dev');if(id)updateDoc(UD('devices',id),{chat:v}).catch(function(){})}
 function pushTest(){navigator.serviceWorker.ready.then(function(r){return r.showNotification('🐾 小西家',{body:'通知のテストだにゃ',icon:'icon-192.png',badge:'badge-96.png'})}).catch(function(e){banner('テスト表示できませんでした')})}
-Object.assign(window,{saveCity:saveCity,useHere:useHere,pushNews:pushNews,enablePush:enablePush,pushOff:pushOff,pushChat:pushChat,pushTest:pushTest,sendChat:sendChat,show:show,dl:dl,tg:tg,addTodo:addTodo,addEvent:addEvent,addRem:addRem,addMemo:addMemo,setCol:setCol,importLocal:importLocal,login:login,logout:logout,refreshApp:refreshApp,addGoal:addGoal,gtg:gtg,gdel:gdel,setGKind:setGKind,setGCol:setGCol,rxT:rxT,rxS:rxS,tglFut:tglFut});
+Object.assign(window,{tglPast:tglPast,saveCity:saveCity,useHere:useHere,pushNews:pushNews,enablePush:enablePush,pushOff:pushOff,pushChat:pushChat,pushTest:pushTest,sendChat:sendChat,show:show,dl:dl,tg:tg,addTodo:addTodo,addEvent:addEvent,addRem:addRem,addMemo:addMemo,setCol:setCol,importLocal:importLocal,login:login,logout:logout,refreshApp:refreshApp,addGoal:addGoal,gtg:gtg,gdel:gdel,setGKind:setGKind,setGCol:setGCol,rxT:rxT,rxS:rxS,tglFut:tglFut});
 $('i-date').value=ymd(new Date());
 $('i-rdate').value=ymd(new Date());
 drawDots();
