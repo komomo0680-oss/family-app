@@ -124,7 +124,7 @@ async function getDefaultPos() {
   if (!defPos) console.log('天気の地域が見つかりません：' + cfg.city);
   return defPos;
 }
-function newsLines(events, todos, w, td, cityName) {
+function newsLines(events, todos, w, td, cityName, bring) {
   const L = [];
   const evs = events.map((e) => ({ e, d: eff(e, td) })).filter((o) => o.d);
   const today = evs.filter((o) => o.d === td).sort((a, b) => ((a.e.time || '') < (b.e.time || '') ? -1 : 1));
@@ -140,26 +140,34 @@ function newsLines(events, todos, w, td, cityName) {
     const r = w.weather_code.filter((c, i) => isRain(c, w.precipitation_probability_max[i])).length;
     if (r) L.push('今週は雨予報（' + r + '日）');
   }
+  const wd = new Date(td + 'T00:00:00Z').getUTCDay();
+  const items = (bring || []).filter((b) => (b.days || []).includes(wd)).map((b) => b.name + (b.who ? '（' + b.who + '）' : ''));
+  if (w) {
+    if (isRain(w.weather_code[0], w.precipitation_probability_max[0])) items.push('傘（雨予報）');
+    if (w.temperature_2m_max[0] >= 28) items.push('水筒（暑い日）');
+    if (w.temperature_2m_min[0] <= 8) items.push('上着（寒い日）');
+  }
+  if (items.length) L.push('🎒 今日の持ち物：' + items.join('、'));
   return L;
 }
 const todayStr = nowL.slice(0, 10);
 const hourJ = new Date(now + TZ_HOURS * 3600e3).getUTCHours();
 if (cfg.news !== false && hourJ >= cfg.newsHour && hourJ < cfg.newsHour + 3) {
-  const [sEv, sTd] = await Promise.all([fam.collection('events').get(), fam.collection('todos').get()]);
-  const shared = { ev: sEv.docs.map((d) => d.data()), td: sTd.docs.map((d) => d.data()) };
+  const [sEv, sTd, sBr] = await Promise.all([fam.collection('events').get(), fam.collection('todos').get(), fam.collection('bring').get()]);
+  const shared = { ev: sEv.docs.map((d) => d.data()), td: sTd.docs.map((d) => d.data()), br: sBr.docs.map((d) => d.data()) };
   for (const u of userRefs) {
     const mine = devices.filter((x) => x.uid === u.id && x.news !== false);
     if (!mine.length) continue;
     const flag = u.collection('newsSent').doc(todayStr);
     if ((await flag.get()).exists) continue;
-    const [pEv, pTd] = await Promise.all([u.collection('events').get(), u.collection('todos').get()]);
+    const [pEv, pTd, pBr] = await Promise.all([u.collection('events').get(), u.collection('todos').get(), u.collection('bring').get()]);
     const sd = await u.collection('settings').doc('weather').get();
     const sv = sd.exists ? sd.data() : null;
     let pos, cityName;
     if (sv && typeof sv.lat === 'number') { pos = { latitude: sv.lat, longitude: sv.lon }; cityName = sv.city || '現在地'; }
     else { pos = await getDefaultPos(); cityName = cfg.city; }
     const weather = pos ? await forecast(pos) : null;
-    const lines = newsLines(shared.ev.concat(pEv.docs.map((d) => d.data())), shared.td.concat(pTd.docs.map((d) => d.data())), weather, todayStr, cityName);
+    const lines = newsLines(shared.ev.concat(pEv.docs.map((d) => d.data())), shared.td.concat(pTd.docs.map((d) => d.data())), weather, todayStr, cityName, shared.br.concat(pBr.docs.map((d) => d.data())));
     const [, mm, dd] = todayStr.split('-');
     const ok = await send(mine, '📰 家族ニュース ' + +mm + '/' + +dd, lines.map((l) => '・' + l).join('\n'), 'news-' + todayStr);
     if (ok > 0) await flag.set({ ts: now }); // 届かなかったときは、次の実行でもう一度ためす

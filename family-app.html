@@ -46,6 +46,9 @@ nav button.on::before{opacity:1}
 .seg button{flex:1}
 .seg button.on{background:var(--acbg);border-color:var(--ac);color:var(--acx);font-weight:600}
 .gcard{--gc:var(--ac);background:var(--card);border:1px solid var(--bd);border-left:8px solid var(--gc);border-radius:var(--r);padding:12px 8px 6px 12px;margin-bottom:12px}
+.wd{width:42px;height:42px;border-radius:50%;padding:0;min-height:0}
+.wd.on{background:var(--acbg);border-color:var(--ac);color:var(--acx);font-weight:600}
+.bl{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:16px}
 .newscard{padding:16px 14px 12px 16px;min-height:calc(100vh - 230px);min-height:calc(100dvh - 230px)}
 .nl{font-size:16px;margin:6px 0;color:var(--tx)}
 .ghead{display:flex;align-items:center;gap:10px;padding-bottom:6px}
@@ -95,6 +98,7 @@ details>summary{cursor:pointer;padding:6px 0}
 <p class="h">📌 お知らせ</p>
 <div id="nc-ev"></div>
 <div id="nc-news"></div>
+<div id="nc-bring"></div>
 <p class="h">✅ TODO</p>
 <div class="row"><input id="i-todo" placeholder="牛乳を買う"><button class="pri" onclick="addTodo()">追加</button></div>
 <div class="row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="i-tshare" checked style="width:20px;height:20px"> 家族と共有する</label></div>
@@ -140,6 +144,14 @@ details>summary{cursor:pointer;padding:6px 0}
 <div class="row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="i-mshare" style="width:20px;height:20px"> 家族と共有する</label></div>
 <div class="row"><button class="pri" style="flex:1" onclick="addMemo()">メモを保存</button></div>
 <p class="err" id="e-memo"></p><div id="l-memo"></div>
+<p class="h" style="margin-top:28px">🎒 持ち物チェック（毎週くり返し）</p>
+<p class="sub" style="margin-bottom:8px">曜日を選んで登録すると、その日の「ニュース」のお知らせに出ます。チェックは毎日リセットされます。</p>
+<div class="row"><input id="i-bname" placeholder="体操服、水筒（「、」で区切ると、まとめて登録）"></div>
+<div class="row"><input id="i-bset" placeholder="セット名（任意）例：プールセット"><input id="i-bwho" placeholder="誰の（任意）" style="width:110px;flex:none"></div>
+<div class="dots" id="bdays"></div>
+<div class="row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="i-bshare" style="width:20px;height:20px"> 家族と共有する</label></div>
+<div class="row"><button class="pri" style="flex:1" onclick="addBring()">持ち物を追加</button></div>
+<p class="err" id="e-bring"></p><div id="l-bring"></div>
 <div id="wbox" style="margin-top:28px"></div>
 </section>
 
@@ -180,7 +192,7 @@ function ymd(d){return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate()
 function dtl(d){return ymd(d)+'T'+p2(d.getHours())+':'+p2(d.getMinutes())}
 function label(s){var d=new Date(s+'T00:00');return (d.getMonth()+1)+'月'+d.getDate()+'日（'+W[d.getDay()]+'）'}
 function hex(c,f){return /^#[0-9a-f]{6}$/i.test(c||'')?c:f}
-var S={todos:[],events:[],rems:[],memos:[],evS:[],evP:[],memS:[],memP:[],todS:[],todP:[],chat:[],remS:[],remP:[],goalP:[],setP:[]},curTab='today',unsubs=[],fired={},rxOpen=null,futOpen=false,lastChatId='';
+var S={todos:[],events:[],rems:[],memos:[],evS:[],evP:[],memS:[],memP:[],todS:[],todP:[],chat:[],remS:[],remP:[],goalP:[],setP:[],bringS:[],bringP:[],bring:[]},curTab='today',unsubs=[],fired={},rxOpen=null,futOpen=false,lastChatId='';
 try{fired=JSON.parse(localStorage.getItem('fam-fired')||'{}')}catch(e){}
 var GCOLORS=['#E8856A','#F0B340','#7BBF8E','#6BAED6','#B493D8','#E58FB0'],col=GCOLORS[0],gkind='long',gcol=null,RX=['👍','❤️','😂','🙏','🐾'];
 function err(id,m){$(id).textContent=m}
@@ -256,7 +268,7 @@ function rToday(){
  var td=ymd(new Date());
  $('news-date').textContent=label(td);
  $('nc-goals').innerHTML=goalsTop();
- $('nc-news').innerHTML=newsLines(td).map(function(l){return '<p class="nl">・'+esc(l)+'</p>'}).join('');
+ $('nc-news').innerHTML=newsLines(td).map(function(l){return '<p class="nl">・'+esc(l)+'</p>'}).join('');rBringNow();
  var h='';
  function trow(bar,title,sub,extra){return '<div class="item">'+(bar?'<span class="bar" style="background:'+bar+'"></span>':'')+'<div class="t"><div>'+title+'</div>'+(sub?'<p class="sub">'+sub+'</p>':'')+'</div>'+(extra||'')+'</div>'}
  var evs=S.events.map(function(e){return {e:e,d:effDate(e)}}).filter(function(o){return o.d===td}).sort(function(a,b){return (a.e.time||'')<(b.e.time||'')?-1:1});
@@ -295,7 +307,7 @@ function rChat(){
   for(k in rx){if(RX.indexOf(rx[k])>=0)cnt[rx[k]]=(cnt[rx[k]]||0)+1}
   var chips=RX.filter(function(e){return cnt[e]}).map(function(e){return '<button class="'+(rx[me]===e?'me':'')+'" onclick="rxS('+i+',\''+e+'\')">'+e+' '+cnt[e]+'</button>'}).join('');
   return '<div style="display:flex;flex-direction:column;align-items:'+(mine?'flex-end':'flex-start')+'"><p class="sub" style="margin-top:8px">'+esc(c.who||'')+'　'+(d.getMonth()+1)+'/'+d.getDate()+' '+d.getHours()+':'+p2(d.getMinutes())+(mine?'<button class="x" aria-label="削除" onclick="dl(\'chat\','+i+')" style="font-size:16px;min-height:0">×</button>':'')+'</p><div class="msg'+(mine?' me':'')+'">'+esc(c.text)+'</div><div class="rx">'+chips+'<button class="add" aria-label="反応をつける" onclick="rxT('+i+')">＋</button></div>'+(rxOpen===c.id?'<div class="rxp">'+RX.map(function(e){return '<button onclick="rxS('+i+',\''+e+'\')">'+e+'</button>'}).join('')+'</div>':'')+'</div>'}).join(''):empty('まだメッセージはないにゃ')}
-function render(){rToday();rTodo();rGoal();rEvent();rRem();rMemo();rChat()}
+function render(){rBring();rToday();rTodo();rGoal();rEvent();rRem();rMemo();rChat()}
 
 /* ---- 通知 ---- */
 function check(){var now=dtl(new Date()),old=dtl(new Date(Date.now()-864e5)),hit=[],ch=false;S.rems.forEach(function(r){if(!r._p||fired[r.id]||r.at>now)return;fired[r.id]=1;ch=true;if(r.at>=old)hit.push(r.text)});if(ch){try{localStorage.setItem('fam-fired',JSON.stringify(fired))}catch(e){}if(hit.length)banner(CATI+hit.map(esc).join('、')+' の時間だにゃ');render()}}
@@ -313,8 +325,8 @@ function mkRems(id,d,tm,title,sh){var now=dtl(new Date()),dd=new Date(d+'T00:00'
 function sendChat(){var v=$('i-chat').value.trim();if(!v||!auth.currentUser)return;addDoc(C('chat'),{text:v,who:myName(),uid:auth.currentUser.uid,ts:Date.now()});$('i-chat').value=''}
 function stop(){chatInit=false;unsubs.forEach(function(u){u()});unsubs=[]}
 function denied(){stop();signOut(auth).then(function(){err('lmsg','このGoogleアカウントは許可されていません。')})}
-function lc(ref,key,priv){return onSnapshot(ref,function(sn){S[key]=sn.docs.map(function(d){return Object.assign({id:d.id,_p:priv},d.data())});if(key==='todS'||key==='todP')S.todos=S.todS.concat(S.todP).sort(function(a,b){return (b.ts||0)-(a.ts||0)});if(key==='memS'||key==='memP')S.memos=S.memS.concat(S.memP).sort(function(a,b){return (b.ts||0)-(a.ts||0)});if(key==='evS'||key==='evP')S.events=S.evS.concat(S.evP);if(key==='remS'||key==='remP')S.rems=S.remS.concat(S.remP);if(key==='chat')S.chat.reverse();render();if(key==='chat'){onChat();if(curTab==='chat'){var lid=S.chat.length?S.chat[S.chat.length-1].id:'';if(lid!==lastChatId){lastChatId=lid;window.scrollTo(0,document.body.scrollHeight)}}}if(key==='setP')wSetting();if(key==='remS'||key==='remP')check()},function(e){if(e.code==='permission-denied'){if(priv)banner('Firebaseのルールを更新してください');else denied()}})}
-function listen(){stop();unsubs=[lc(C('todos'),'todS',0),lc(U('todos'),'todP',1),lc(C('rems'),'remS',0),lc(U('rems'),'remP',1),lc(query(C('chat'),orderBy('ts','desc'),limit(100)),'chat',0),lc(C('events'),'evS',0),lc(U('events'),'evP',1),lc(C('memos'),'memS',0),lc(U('memos'),'memP',1),lc(U('goals'),'goalP',1),lc(U('settings'),'setP',1)]}
+function lc(ref,key,priv){return onSnapshot(ref,function(sn){S[key]=sn.docs.map(function(d){return Object.assign({id:d.id,_p:priv},d.data())});if(key==='todS'||key==='todP')S.todos=S.todS.concat(S.todP).sort(function(a,b){return (b.ts||0)-(a.ts||0)});if(key==='memS'||key==='memP')S.memos=S.memS.concat(S.memP).sort(function(a,b){return (b.ts||0)-(a.ts||0)});if(key==='evS'||key==='evP')S.events=S.evS.concat(S.evP);if(key==='bringS'||key==='bringP')S.bring=S.bringS.concat(S.bringP);if(key==='remS'||key==='remP')S.rems=S.remS.concat(S.remP);if(key==='chat')S.chat.reverse();render();if(key==='chat'){onChat();if(curTab==='chat'){var lid=S.chat.length?S.chat[S.chat.length-1].id:'';if(lid!==lastChatId){lastChatId=lid;window.scrollTo(0,document.body.scrollHeight)}}}if(key==='setP')wSetting();if(key==='remS'||key==='remP')check()},function(e){if(e.code==='permission-denied'){if(priv)banner('Firebaseのルールを更新してください');else denied()}})}
+function listen(){stop();unsubs=[lc(C('todos'),'todS',0),lc(U('todos'),'todP',1),lc(C('rems'),'remS',0),lc(U('rems'),'remP',1),lc(query(C('chat'),orderBy('ts','desc'),limit(100)),'chat',0),lc(C('events'),'evS',0),lc(U('events'),'evP',1),lc(C('memos'),'memS',0),lc(U('memos'),'memP',1),lc(U('goals'),'goalP',1),lc(U('settings'),'setP',1),lc(C('bring'),'bringS',0),lc(U('bring'),'bringP',1)]}
 function localData(){try{return JSON.parse(localStorage.getItem('fam-app-v1')||'null')}catch(e){return null}}
 function showImport(){var o=localData(),n=0;if(o)KS.forEach(function(k){n+=(o[k]||[]).length});$('imp').style.display=(n&&!localStorage.getItem('fam-app-imported'))?'block':'none'}
 function importLocal(){var o=localData();if(!o)return;var b=writeBatch(db),now=Date.now();
@@ -326,6 +338,38 @@ function importLocal(){var o=localData();if(!o)return;var b=writeBatch(db),now=D
 function login(){err('lmsg','');signInWithPopup(auth,new GoogleAuthProvider()).catch(function(e){err('lmsg','ログインできませんでした（'+(e.code||'')+'）')})}
 function logout(){stop();unregDev();signOut(auth)}
 function refreshApp(){fetch(location.pathname,{cache:'reload'}).catch(function(){}).then(function(){location.reload()})}
+/* ---- 持ち物チェック ---- */
+var bdays=[new Date().getDay()];
+function bdesc(d){var a=d.slice().sort();if(a.length===7)return '毎日';if(a.join()==='1,2,3,4,5')return '平日';return a.map(function(x){return W[x]}).join('・')}
+function drawBdays(){var el=$('bdays');if(!el)return;el.innerHTML=[0,1,2,3,4,5,6].map(function(i){return '<button class="wd'+(bdays.indexOf(i)>=0?' on':'')+'" onclick="bdTog('+i+')">'+W[i]+'</button>'}).join('')+'<button class="who" onclick="bdSet(\'wk\')">平日</button><button class="who" onclick="bdSet(\'all\')">毎日</button>'}
+function bdTog(i){var k=bdays.indexOf(i);if(k>=0)bdays.splice(k,1);else bdays.push(i);drawBdays()}
+function bdSet(m){bdays=m==='wk'?[1,2,3,4,5]:[0,1,2,3,4,5,6];drawBdays()}
+function addBring(){
+ var v=$('i-bname').value.trim();if(!v){err('e-bring','持ち物を入れてください');return}
+ if(!bdays.length){err('e-bring','曜日を1つ以上えらんでください');return}
+ var names=v.split(/[、,，\n]+/).map(function(x){return x.trim()}).filter(Boolean),set=$('i-bset').value.trim(),who=$('i-bwho').value.trim(),col=$('i-bshare').checked?C('bring'):U('bring');
+ names.forEach(function(n,j){addDoc(col,{name:n,days:bdays.slice().sort(),set:set,who:who,by:myName(),ts:Date.now()+j})});
+ $('i-bname').value='';$('i-bset').value=''}
+function dayItems(){
+ var wd=new Date().getDay(),L=S.bring.filter(function(b){return (b.days||[]).indexOf(wd)>=0}).sort(function(a,b){return String(a.who||'').localeCompare(String(b.who||''))||String(a.name).localeCompare(String(b.name))}).map(function(b){return {id:b.id,name:b.name,who:b.who||'',note:''}});
+ if(NEWS_W){var d=NEWS_W.d;
+  if(isRain(d.weather_code[0],d.precipitation_probability_max[0]))L.push({id:'auto:rain',name:'傘',who:'',note:'雨予報'});
+  if(d.temperature_2m_max[0]>=28)L.push({id:'auto:hot',name:'水筒',who:'',note:'暑い日'});
+  if(d.temperature_2m_min[0]<=8)L.push({id:'auto:cold',name:'上着',who:'',note:'寒い日'})}
+ return L}
+function bringDone(){var td=ymd(new Date()),c=S.setP.filter(function(x){return x.id==='bringcheck'})[0];return c&&c.date===td?(c.ids||[]):[]}
+function bringTg(id){
+ var td=ymd(new Date()),ids=bringDone().slice(),k=ids.indexOf(id);if(k>=0)ids.splice(k,1);else ids.push(id);
+ setDoc(UD('settings','bringcheck'),{date:td,ids:ids}).catch(function(){banner('チェックを保存できませんでした')});
+ var items=dayItems();if(k<0&&items.length&&items.every(function(x){return ids.indexOf(x.id)>=0}))celebrate()}
+function rBringNow(){
+ var el=$('nc-bring');if(!el)return;var items=dayItems();if(!items.length){el.innerHTML='';return}
+ var done=bringDone(),all=items.every(function(x){return done.indexOf(x.id)>=0});
+ el.innerHTML='<p class="nl" style="margin-top:12px"><b>🎒 今日の持ち物</b></p>'+items.map(function(x){var on=done.indexOf(x.id)>=0;return '<label class="bl"><input type="checkbox" '+(on?'checked':'')+' onchange="bringTg(\''+esc(x.id)+'\')" style="width:22px;height:22px;flex:none"><span class="'+(on?'done':'')+'">'+esc(x.name)+'</span>'+(x.who?' <span class="who">'+esc(x.who)+'</span>':'')+(x.note?' <span class="sub">'+esc(x.note)+'</span>':'')+'</label>'}).join('')+(all?'<p class="nl">🐾 ぜんぶそろったにゃ！</p>':'')}
+function rBring(){
+ drawBdays();var el=$('l-bring');if(!el)return;
+ var L=S.bring.map(function(b,i){return {b:b,i:i}}).sort(function(a,b){return String(a.b.set||'').localeCompare(String(b.b.set||''))||String(a.b.name).localeCompare(String(b.b.name))});
+ el.innerHTML=L.length?L.map(function(o){var b=o.b;return '<div class="item"><div class="t"><div>'+esc(b.name)+(b.who?' <span class="who">'+esc(b.who)+'</span>':'')+'</div><p class="sub">'+bdesc(b.days||[])+(b.set?'　'+esc(b.set):'')+'</p></div>'+(b._p?'<span class="who">自分のみ</span>':'<span class="badge">'+esc(b.by||'共有')+'</span>')+xb('bring',o.i)+'</div>'}).join(''):'<p class="sub">まだ持ち物がありません。</p>'}
 /* ---- 家族ニュース ---- */
 var NEWS_W=null,NEWS_WS='loading';
 function dayDiff(a,b){return Math.round((new Date(a+'T00:00')-new Date(b+'T00:00'))/864e5)}
@@ -392,7 +436,7 @@ async function pushOff(){
  pushState()}
 function pushChat(v){try{localStorage.setItem('fam-push-chat',v?'1':'0')}catch(e){}var id=localStorage.getItem('fam-push-dev');if(id)updateDoc(UD('devices',id),{chat:v}).catch(function(){})}
 function pushTest(){navigator.serviceWorker.ready.then(function(r){return r.showNotification('🐾 小西家',{body:'通知のテストだにゃ',icon:'icon-192.png',badge:'badge-96.png'})}).catch(function(e){banner('テスト表示できませんでした')})}
-Object.assign(window,{tglPast:tglPast,saveCity:saveCity,useHere:useHere,pushNews:pushNews,enablePush:enablePush,pushOff:pushOff,pushChat:pushChat,pushTest:pushTest,sendChat:sendChat,show:show,dl:dl,tg:tg,addTodo:addTodo,addEvent:addEvent,addRem:addRem,addMemo:addMemo,setCol:setCol,importLocal:importLocal,login:login,logout:logout,refreshApp:refreshApp,addGoal:addGoal,gtg:gtg,gdel:gdel,setGKind:setGKind,setGCol:setGCol,rxT:rxT,rxS:rxS,tglFut:tglFut});
+Object.assign(window,{bdTog:bdTog,bdSet:bdSet,addBring:addBring,bringTg:bringTg,tglPast:tglPast,saveCity:saveCity,useHere:useHere,pushNews:pushNews,enablePush:enablePush,pushOff:pushOff,pushChat:pushChat,pushTest:pushTest,sendChat:sendChat,show:show,dl:dl,tg:tg,addTodo:addTodo,addEvent:addEvent,addRem:addRem,addMemo:addMemo,setCol:setCol,importLocal:importLocal,login:login,logout:logout,refreshApp:refreshApp,addGoal:addGoal,gtg:gtg,gdel:gdel,setGKind:setGKind,setGCol:setGCol,rxT:rxT,rxS:rxS,tglFut:tglFut});
 $('i-date').value=ymd(new Date());
 $('i-rdate').value=ymd(new Date());
 drawDots();
