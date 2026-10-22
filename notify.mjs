@@ -161,7 +161,8 @@ if (cfg.news !== false && hourJ >= cfg.newsHour && hourJ < cfg.newsHour + 3) {
   for (const u of userRefs) {
     const mine = devices.filter((x) => x.uid === u.id && x.news !== false);
     if (!mine.length) { console.log('朝のニュース：通知を受け取る端末がありません（' + u.id.slice(0, 6) + '…）'); continue; }
-    const flag = u.collection('newsSent').doc(todayStr);
+    const flagId = todayStr + (cfg.newsTest ? '-' + cfg.newsTest : ''); // newsTest を入れると、同じ日にもう一度ためせる
+    const flag = u.collection('newsSent').doc(flagId);
     if ((await flag.get()).exists) { console.log('朝のニュース：今日はもう送信済みです（' + u.id.slice(0, 6) + '…）'); continue; }
     const [pEv, pTd, pBr] = await Promise.all([u.collection('events').get(), u.collection('todos').get(), u.collection('bring').get()]);
     const sd = await u.collection('settings').doc('weather').get();
@@ -172,7 +173,7 @@ if (cfg.news !== false && hourJ >= cfg.newsHour && hourJ < cfg.newsHour + 3) {
     const weather = pos ? await forecast(pos) : null;
     const lines = newsLines(shared.ev.concat(pEv.docs.map((d) => d.data())), shared.td.concat(pTd.docs.map((d) => d.data())), weather, todayStr, cityName, shared.br.concat(pBr.docs.map((d) => d.data())));
     const [, mm, dd] = todayStr.split('-');
-    const ok = await send(mine, '📰 家族ニュース ' + +mm + '/' + +dd, lines.map((l) => '・' + l).join('\n'), 'news-' + todayStr);
+    const ok = await send(mine, '📰 家族ニュース ' + +mm + '/' + +dd, lines.map((l) => '・' + l).join('\n'), 'news-' + flagId);
     if (ok > 0) await flag.set({ ts: now }); // 届かなかったときは、次の実行でもう一度ためす
   }
 }
