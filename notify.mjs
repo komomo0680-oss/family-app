@@ -152,14 +152,17 @@ function newsLines(events, todos, w, td, cityName, bring) {
 }
 const todayStr = nowL.slice(0, 10);
 const hourJ = new Date(now + TZ_HOURS * 3600e3).getUTCHours();
+console.log(`朝のニュース：設定は${cfg.news !== false ? 'オン' : 'オフ'} / 送る時間は${cfg.newsHour}時台から3時間 / 今は${hourJ}時台`);
+if (cfg.news === false) console.log('朝のニュース：family-config.json で news が false です');
+else if (!(hourJ >= cfg.newsHour && hourJ < cfg.newsHour + 3)) console.log('朝のニュース：いまは送る時間帯ではありません');
 if (cfg.news !== false && hourJ >= cfg.newsHour && hourJ < cfg.newsHour + 3) {
   const [sEv, sTd, sBr] = await Promise.all([fam.collection('events').get(), fam.collection('todos').get(), fam.collection('bring').get()]);
   const shared = { ev: sEv.docs.map((d) => d.data()), td: sTd.docs.map((d) => d.data()), br: sBr.docs.map((d) => d.data()) };
   for (const u of userRefs) {
     const mine = devices.filter((x) => x.uid === u.id && x.news !== false);
-    if (!mine.length) continue;
+    if (!mine.length) { console.log('朝のニュース：通知を受け取る端末がありません（' + u.id.slice(0, 6) + '…）'); continue; }
     const flag = u.collection('newsSent').doc(todayStr);
-    if ((await flag.get()).exists) continue;
+    if ((await flag.get()).exists) { console.log('朝のニュース：今日はもう送信済みです（' + u.id.slice(0, 6) + '…）'); continue; }
     const [pEv, pTd, pBr] = await Promise.all([u.collection('events').get(), u.collection('todos').get(), u.collection('bring').get()]);
     const sd = await u.collection('settings').doc('weather').get();
     const sv = sd.exists ? sd.data() : null;
