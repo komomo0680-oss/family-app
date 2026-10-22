@@ -1,5 +1,6 @@
 {
-  "city": "東京",
+  "city": "いまの地域のまま",
   "news": true,
-  "newsHour": 22
+  "newsHour": 22,
+  "newsTest": "a"
 }
