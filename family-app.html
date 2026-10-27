@@ -153,6 +153,7 @@ details>summary{cursor:pointer;padding:6px 0}
 <div class="row"><button class="pri" style="flex:1" onclick="addBring()">持ち物を追加</button></div>
 <p class="err" id="e-bring"></p><div id="l-bring"></div>
 <div id="wbox" style="margin-top:28px"></div>
+<div id="wgbox" style="margin-top:28px"></div>
 </section>
 
 <section id="s-chat">
@@ -325,7 +326,7 @@ function mkRems(id,d,tm,title,sh){var now=dtl(new Date()),dd=new Date(d+'T00:00'
 function sendChat(){var v=$('i-chat').value.trim();if(!v||!auth.currentUser)return;addDoc(C('chat'),{text:v,who:myName(),uid:auth.currentUser.uid,ts:Date.now()});$('i-chat').value=''}
 function stop(){chatInit=false;unsubs.forEach(function(u){u()});unsubs=[]}
 function denied(){stop();signOut(auth).then(function(){err('lmsg','このGoogleアカウントは許可されていません。')})}
-function lc(ref,key,priv){return onSnapshot(ref,function(sn){S[key]=sn.docs.map(function(d){return Object.assign({id:d.id,_p:priv},d.data())});if(key==='todS'||key==='todP')S.todos=S.todS.concat(S.todP).sort(function(a,b){return (b.ts||0)-(a.ts||0)});if(key==='memS'||key==='memP')S.memos=S.memS.concat(S.memP).sort(function(a,b){return (b.ts||0)-(a.ts||0)});if(key==='evS'||key==='evP')S.events=S.evS.concat(S.evP);if(key==='bringS'||key==='bringP')S.bring=S.bringS.concat(S.bringP);if(key==='remS'||key==='remP')S.rems=S.remS.concat(S.remP);if(key==='chat')S.chat.reverse();render();if(key==='chat'){onChat();if(curTab==='chat'){var lid=S.chat.length?S.chat[S.chat.length-1].id:'';if(lid!==lastChatId){lastChatId=lid;window.scrollTo(0,document.body.scrollHeight)}}}if(key==='setP')wSetting();if(key==='remS'||key==='remP')check()},function(e){if(e.code==='permission-denied'){if(priv)banner('Firebaseのルールを更新してください');else denied()}})}
+function lc(ref,key,priv){return onSnapshot(ref,function(sn){S[key]=sn.docs.map(function(d){return Object.assign({id:d.id,_p:priv},d.data())});if(key==='todS'||key==='todP')S.todos=S.todS.concat(S.todP).sort(function(a,b){return (b.ts||0)-(a.ts||0)});if(key==='memS'||key==='memP')S.memos=S.memS.concat(S.memP).sort(function(a,b){return (b.ts||0)-(a.ts||0)});if(key==='evS'||key==='evP')S.events=S.evS.concat(S.evP);if(key==='bringS'||key==='bringP')S.bring=S.bringS.concat(S.bringP);if(key==='remS'||key==='remP')S.rems=S.remS.concat(S.remP);if(key==='chat')S.chat.reverse();render();if(key==='chat'){onChat();if(curTab==='chat'){var lid=S.chat.length?S.chat[S.chat.length-1].id:'';if(lid!==lastChatId){lastChatId=lid;window.scrollTo(0,document.body.scrollHeight)}}}if(key==='setP'){wSetting();widgetBox()}if(key==='remS'||key==='remP')check()},function(e){if(e.code==='permission-denied'){if(priv)banner('Firebaseのルールを更新してください');else denied()}})}
 function listen(){stop();unsubs=[lc(C('todos'),'todS',0),lc(U('todos'),'todP',1),lc(C('rems'),'remS',0),lc(U('rems'),'remP',1),lc(query(C('chat'),orderBy('ts','desc'),limit(100)),'chat',0),lc(C('events'),'evS',0),lc(U('events'),'evP',1),lc(C('memos'),'memS',0),lc(U('memos'),'memP',1),lc(U('goals'),'goalP',1),lc(U('settings'),'setP',1),lc(C('bring'),'bringS',0),lc(U('bring'),'bringP',1)]}
 function localData(){try{return JSON.parse(localStorage.getItem('fam-app-v1')||'null')}catch(e){return null}}
 function showImport(){var o=localData(),n=0;if(o)KS.forEach(function(k){n+=(o[k]||[]).length});$('imp').style.display=(n&&!localStorage.getItem('fam-app-imported'))?'block':'none'}
@@ -370,6 +371,12 @@ function rBring(){
  drawBdays();var el=$('l-bring');if(!el)return;
  var L=S.bring.map(function(b,i){return {b:b,i:i}}).sort(function(a,b){return String(a.b.set||'').localeCompare(String(b.b.set||''))||String(a.b.name).localeCompare(String(b.b.name))});
  el.innerHTML=L.length?L.map(function(o){var b=o.b;return '<div class="item"><div class="t"><div>'+esc(b.name)+(b.who?' <span class="who">'+esc(b.who)+'</span>':'')+'</div><p class="sub">'+bdesc(b.days||[])+(b.set?'　'+esc(b.set):'')+'</p></div>'+(b._p?'<span class="who">自分のみ</span>':'<span class="badge">'+esc(b.by||'共有')+'</span>')+xb('bring',o.i)+'</div>'}).join(''):'<p class="sub">まだ持ち物がありません。</p>'}
+/* ---- Androidウィジェット用のコード ---- */
+function widgetToken(){var w=S.setP.filter(function(x){return x.id==='widget'})[0];return w&&w.token||''}
+function widgetBox(){var el=$('wgbox');if(!el)return;var t=widgetToken();
+ el.innerHTML='<p class="h" style="margin-top:0">📲 ウィジェット用のコード（Androidアプリ）</p>'+(t?'<p class="sub" style="margin-bottom:8px">Androidアプリに、このコードを貼ります。他の人には見せないでください。</p><div class="row"><input id="i-wgcode" value="'+esc(t)+'" readonly><button onclick="wgCopy()">コピー</button></div><div class="row"><button onclick="wgMake()" style="flex:1">コードを作り直す</button></div>':'<p class="sub" style="margin-bottom:8px">Androidのホーム画面のウィジェットに、家族ニュースを出すためのコードです。</p><div class="row"><button class="pri" style="flex:1" onclick="wgMake()">コードを作る</button></div>')+'<p class="err" id="e-wg"></p>'}
+function wgMake(){var a=new Uint8Array(20);crypto.getRandomValues(a);var t=Array.prototype.map.call(a,function(x){return ('0'+x.toString(16)).slice(-2)}).join('');setDoc(UD('settings','widget'),{token:t,ts:Date.now()}).catch(function(){err('e-wg','保存できませんでした（Firebaseのルールを確認してください）')})}
+function wgCopy(){var i=$('i-wgcode');if(!i)return;i.select();var ok=false;try{navigator.clipboard.writeText(i.value);ok=true}catch(e){try{ok=document.execCommand('copy')}catch(e2){}}err('e-wg',ok?'コピーしました':'長押しして、コピーしてください')}
 /* ---- 家族ニュース ---- */
 var NEWS_W=null,NEWS_WS='loading';
 function dayDiff(a,b){return Math.round((new Date(a+'T00:00')-new Date(b+'T00:00'))/864e5)}
@@ -436,7 +443,7 @@ async function pushOff(){
  pushState()}
 function pushChat(v){try{localStorage.setItem('fam-push-chat',v?'1':'0')}catch(e){}var id=localStorage.getItem('fam-push-dev');if(id)updateDoc(UD('devices',id),{chat:v}).catch(function(){})}
 function pushTest(){navigator.serviceWorker.ready.then(function(r){return r.showNotification('🐾 小西家',{body:'通知のテストだにゃ',icon:'icon-192.png',badge:'badge-96.png'})}).catch(function(e){banner('テスト表示できませんでした')})}
-Object.assign(window,{bdTog:bdTog,bdSet:bdSet,addBring:addBring,bringTg:bringTg,tglPast:tglPast,saveCity:saveCity,useHere:useHere,pushNews:pushNews,enablePush:enablePush,pushOff:pushOff,pushChat:pushChat,pushTest:pushTest,sendChat:sendChat,show:show,dl:dl,tg:tg,addTodo:addTodo,addEvent:addEvent,addRem:addRem,addMemo:addMemo,setCol:setCol,importLocal:importLocal,login:login,logout:logout,refreshApp:refreshApp,addGoal:addGoal,gtg:gtg,gdel:gdel,setGKind:setGKind,setGCol:setGCol,rxT:rxT,rxS:rxS,tglFut:tglFut});
+Object.assign(window,{wgMake:wgMake,wgCopy:wgCopy,bdTog:bdTog,bdSet:bdSet,addBring:addBring,bringTg:bringTg,tglPast:tglPast,saveCity:saveCity,useHere:useHere,pushNews:pushNews,enablePush:enablePush,pushOff:pushOff,pushChat:pushChat,pushTest:pushTest,sendChat:sendChat,show:show,dl:dl,tg:tg,addTodo:addTodo,addEvent:addEvent,addRem:addRem,addMemo:addMemo,setCol:setCol,importLocal:importLocal,login:login,logout:logout,refreshApp:refreshApp,addGoal:addGoal,gtg:gtg,gdel:gdel,setGKind:setGKind,setGCol:setGCol,rxT:rxT,rxS:rxS,tglFut:tglFut});
 $('i-date').value=ymd(new Date());
 $('i-rdate').value=ymd(new Date());
 drawDots();
@@ -446,7 +453,7 @@ var hh=location.hash.replace('#','');if(TT[hh])tab=hh;
 show(TT[tab]?tab:'today');render();
 onAuthStateChanged(auth,function(u){
  var on=!!u;$('login').style.display=on?'none':'block';$('app').style.display=on?'block':'none';$('nav').style.display=on?'flex':'none';
- if(on){err('lmsg','');$('i-who').value=((u.displayName||'家族').split(/\s+/)[0]).slice(0,6);showImport();listen();pushState();weatherBox();loadWeather();if(localStorage.getItem('fam-push-on')==='1'&&window.Notification&&Notification.permission==='granted')enablePush(true);setTimeout(function(){navCenter(curTab)},60)}else{stop()}
+ if(on){err('lmsg','');$('i-who').value=((u.displayName||'家族').split(/\s+/)[0]).slice(0,6);showImport();listen();pushState();weatherBox();widgetBox();loadWeather();if(localStorage.getItem('fam-push-on')==='1'&&window.Notification&&Notification.permission==='granted')enablePush(true);setTimeout(function(){navCenter(curTab)},60)}else{stop()}
 });
 setInterval(check,10000);
 </script></body></html>

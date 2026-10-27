@@ -177,4 +177,38 @@ if (cfg.news !== false && hourJ >= cfg.newsHour && hourJ < cfg.newsHour + 3) {
     if (ok > 0) await flag.set({ ts: now }); // 届かなかったときは、次の実行でもう一度ためす
   }
 }
+
+// 5) Androidウィジェット用のニュース（コードを作った人だけ。1時間に1回＋初回）
+async function weatherFor(u) {
+  const sd = await u.collection('settings').doc('weather').get();
+  const sv = sd.exists ? sd.data() : null;
+  let pos, cityName;
+  if (sv && typeof sv.lat === 'number') { pos = { latitude: sv.lat, longitude: sv.lon }; cityName = sv.city || '現在地'; }
+  else { pos = await getDefaultPos(); cityName = cfg.city; }
+  return { weather: pos ? await forecast(pos) : null, cityName };
+}
+if (cfg.widget !== false) {
+  const minuteJ = new Date(now + TZ_HOURS * 3600e3).getUTCMinutes();
+  let sh;
+  for (const u of userRefs) {
+    const wd = await u.collection('settings').doc('widget').get();
+    const token = wd.exists ? wd.data().token : '';
+    if (!/^[0-9a-f]{40}$/.test(String(token))) continue;
+    const wdoc = db.collection('widgets').doc(token);
+    if (minuteJ >= 5 && (await wdoc.get()).exists) continue;
+    if (!sh) {
+      const [a, b, c] = await Promise.all([fam.collection('events').get(), fam.collection('todos').get(), fam.collection('bring').get()]);
+      sh = { ev: a.docs.map((d) => d.data()), td: b.docs.map((d) => d.data()), br: c.docs.map((d) => d.data()) };
+    }
+    const [pEv, pTd, pBr, pGo] = await Promise.all([u.collection('events').get(), u.collection('todos').get(), u.collection('bring').get(), u.collection('goals').get()]);
+    const { weather, cityName } = await weatherFor(u);
+    const todos = sh.td.concat(pTd.docs.map((d) => d.data()));
+    const lines = [];
+    pGo.docs.map((d) => d.data()).filter((g) => g.kind === 'long' && !g.d).slice(0, 3).forEach((g) => lines.push('🎯 ' + g.t));
+    lines.push(...newsLines(sh.ev.concat(pEv.docs.map((d) => d.data())), todos, weather, todayStr, cityName, sh.br.concat(pBr.docs.map((d) => d.data()))).map((l) => '・' + l));
+    todos.filter((x) => !x.d).slice(0, 5).forEach((x) => lines.push('✅ ' + x.t));
+    await wdoc.set({ lines, updated: nowL.slice(5, 16).replace('T', ' '), ts: now });
+    console.log('ウィジェット：更新（' + u.id.slice(0, 6) + '…）');
+  }
+}
 console.log('完了');
