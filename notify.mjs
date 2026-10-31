@@ -188,14 +188,15 @@ async function weatherFor(u) {
   return { weather: pos ? await forecast(pos) : null, cityName };
 }
 if (cfg.widget !== false) {
-  const minuteJ = new Date(now + TZ_HOURS * 3600e3).getUTCMinutes();
+  const WIDGET_INTERVAL_MS = 3 * 3600e3; // ウィジェットの更新は3時間に1回まで（データ使用量を抑える）
   let sh;
   for (const u of userRefs) {
     const wd = await u.collection('settings').doc('widget').get();
     const token = wd.exists ? wd.data().token : '';
     if (!/^[0-9a-f]{40}$/.test(String(token))) continue;
     const wdoc = db.collection('widgets').doc(token);
-    if (minuteJ >= 5 && (await wdoc.get()).exists) continue;
+    const wsnap = await wdoc.get();
+    if (wsnap.exists && now - (wsnap.data().ts || 0) < WIDGET_INTERVAL_MS) continue;
     if (!sh) {
       const [a, b, c] = await Promise.all([fam.collection('events').get(), fam.collection('todos').get(), fam.collection('bring').get()]);
       sh = { ev: a.docs.map((d) => d.data()), td: b.docs.map((d) => d.data()), br: c.docs.map((d) => d.data()) };
