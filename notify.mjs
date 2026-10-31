@@ -94,14 +94,14 @@ function eff(e, td) {
 }
 const dayDiff = (a, b) => Math.round((Date.parse(a + 'T00:00:00Z') - Date.parse(b + 'T00:00:00Z')) / 864e5);
 const WC = (c) => (c === 0 ? '快晴' : c <= 2 ? '晴れ' : c === 3 ? 'くもり' : c <= 48 ? '霧' : c <= 57 ? '霧雨' : c <= 67 ? '雨' : c <= 77 ? '雪' : c <= 82 ? 'にわか雨' : c <= 86 ? 'にわか雪' : '雷雨');
-const isRain = (c, p) => (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95 || p >= 60;
+const isRain = (c, p) => (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95; // 傘の判定は天気コードだけ（降水確率は表示のみ）
 const fcMemo = new Map();
 async function forecast(pos) {
   const key = pos.latitude + ',' + pos.longitude;
   if (fcMemo.has(key)) return fcMemo.get(key);
   let r = null;
   try {
-    const w = await (await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + pos.latitude + '&longitude=' + pos.longitude + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=7')).json();
+    const w = await (await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + pos.latitude + '&longitude=' + pos.longitude + '&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,precipitation_probability_max&timezone=Asia%2FTokyo&forecast_days=7')).json();
     r = w.daily || null;
   } catch (e) { console.log('天気の取得に失敗：' + e.message); }
   fcMemo.set(key, r);
@@ -135,11 +135,15 @@ function newsLines(events, todos, w, td, cityName, bring) {
     .forEach((o) => { const k = dayDiff(o.d, td); L.push(k === 1 ? '明日は' + o.e.title : o.e.title + 'まであと' + k + '日'); });
   const n = todos.filter((x) => !x.d).length;
   L.push(n ? 'TODO 未完了 ' + n + '件' : 'TODOはぜんぶ終わっています');
+  const nx = w && new Date(now + TZ_HOURS * 3600e3).getUTCHours() >= 19 && w.weather_code.length > 1 ? 1 : 0; // 19時からは明日の天気を表示
   if (w) {
-    const nx = new Date(now + TZ_HOURS * 3600e3).getUTCHours() >= 19 && w.weather_code.length > 1 ? 1 : 0; // 19時からは明日の天気を表示
-    L.push((nx ? '明日' : '今日') + 'の' + cityName + 'は' + WC(w.weather_code[nx]) + '　最高' + Math.round(w.temperature_2m_max[nx]) + '°　最低' + Math.round(w.temperature_2m_min[nx]) + '°　降水' + w.precipitation_probability_max[nx] + '%');
-    const r = w.weather_code.filter((c, i) => isRain(c, w.precipitation_probability_max[i])).length;
-    if (r) L.push('今週は雨予報（' + r + '日）');
+    let s = (nx ? '明日' : '今日') + 'の' + cityName + 'は' + WC(w.weather_code[nx]) + '　最高' + Math.round(w.temperature_2m_max[nx]) + '°　最低' + Math.round(w.temperature_2m_min[nx]) + '°　降水' + w.precipitation_probability_max[nx] + '%';
+    if (nx) {
+      const df = Math.round(w.temperature_2m_max[1]) - Math.round(w.temperature_2m_max[0]);
+      if (df >= 3) s += '（今日より暑い）'; else if (df <= -3) s += '（今日より寒い）';
+      if (w.apparent_temperature_max && w.apparent_temperature_max[1] >= 30 && w.apparent_temperature_max[1] - w.temperature_2m_max[1] >= 3) s += '　ムシムシしそう';
+    }
+    L.push(s);
   }
   const wd = new Date(td + 'T00:00:00Z').getUTCDay();
   const items = (bring || []).filter((b) => (b.days || []).includes(wd)).map((b) => b.name + (b.who ? '（' + b.who + '）' : ''));
@@ -149,6 +153,15 @@ function newsLines(events, todos, w, td, cityName, bring) {
     if (w.temperature_2m_min[0] <= 8) items.push('上着（寒い日）');
   }
   if (items.length) L.push('🎒 今日の持ち物：' + items.join('、'));
+  if (nx) {
+    const tm = (bring || []).filter((b) => (b.days || []).includes((wd + 1) % 7)).map((b) => b.name + (b.who ? '（' + b.who + '）' : ''));
+    if (w) {
+      if (isRain(w.weather_code[1], w.precipitation_probability_max[1])) tm.push('傘（雨予報）');
+      if (w.temperature_2m_max[1] >= 28) tm.push('水筒（暑い日）');
+      if (w.temperature_2m_min[1] <= 8) tm.push('上着（寒い日）');
+    }
+    if (tm.length) L.push('🎒 明日の持ち物（予告）：' + tm.join('、'));
+  }
   return L;
 }
 const todayStr = nowL.slice(0, 10);
