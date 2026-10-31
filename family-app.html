@@ -382,7 +382,7 @@ var NEWS_W=null,NEWS_WS='loading';
 function dayDiff(a,b){return Math.round((new Date(a+'T00:00')-new Date(b+'T00:00'))/864e5)}
 function WC(c){return c===0?'快晴':c<=2?'晴れ':c===3?'くもり':c<=48?'霧':c<=57?'霧雨':c<=67?'雨':c<=77?'雪':c<=82?'にわか雨':c<=86?'にわか雪':'雷雨'}
 function isRain(c,p){return (c>=51&&c<=67)||(c>=80&&c<=82)||c>=95||p>=60}
-function weatherLines(w){var d=w.d,L=[];L.push('今日の'+w.name+'は'+WC(d.weather_code[0])+'　最高'+Math.round(d.temperature_2m_max[0])+'°　最低'+Math.round(d.temperature_2m_min[0])+'°　降水'+d.precipitation_probability_max[0]+'%');var r=0;for(var i=0;i<d.weather_code.length;i++)if(isRain(d.weather_code[i],d.precipitation_probability_max[i]))r++;if(r)L.push('今週は雨予報（'+r+'日）');return L}
+function weatherLines(w){var d=w.d,L=[];var nx=(new Date().getHours()>=19&&d.weather_code.length>1)?1:0;L.push((nx?'明日':'今日')+'の'+w.name+'は'+WC(d.weather_code[nx])+'　最高'+Math.round(d.temperature_2m_max[nx])+'°　最低'+Math.round(d.temperature_2m_min[nx])+'°　降水'+d.precipitation_probability_max[nx]+'%');var r=0;for(var i=0;i<d.weather_code.length;i++)if(isRain(d.weather_code[i],d.precipitation_probability_max[i]))r++;if(r)L.push('今週は雨予報（'+r+'日）');return L}
 function newsLines(td){
  var L=[],evs=S.events.map(function(e){return {e:e,d:effDate(e)}});
  evs.filter(function(o){var k=dayDiff(o.d,td);return (o.e.special||o.e.countdown)&&k>0&&k<=(o.e.special?14:30)}).sort(function(a,b){return dayDiff(a.d,td)-dayDiff(b.d,td)}).slice(0,3).forEach(function(o){var k=dayDiff(o.d,td);L.push(k===1?'明日は'+o.e.title:o.e.title+'まであと'+k+'日')});
