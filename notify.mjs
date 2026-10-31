@@ -136,7 +136,8 @@ function newsLines(events, todos, w, td, cityName, bring) {
   const n = todos.filter((x) => !x.d).length;
   L.push(n ? 'TODO 未完了 ' + n + '件' : 'TODOはぜんぶ終わっています');
   if (w) {
-    L.push('今日の' + cityName + 'は' + WC(w.weather_code[0]) + '　最高' + Math.round(w.temperature_2m_max[0]) + '°　最低' + Math.round(w.temperature_2m_min[0]) + '°　降水' + w.precipitation_probability_max[0] + '%');
+    const nx = new Date(now + TZ_HOURS * 3600e3).getUTCHours() >= 19 && w.weather_code.length > 1 ? 1 : 0; // 19時からは明日の天気を表示
+    L.push((nx ? '明日' : '今日') + 'の' + cityName + 'は' + WC(w.weather_code[nx]) + '　最高' + Math.round(w.temperature_2m_max[nx]) + '°　最低' + Math.round(w.temperature_2m_min[nx]) + '°　降水' + w.precipitation_probability_max[nx] + '%');
     const r = w.weather_code.filter((c, i) => isRain(c, w.precipitation_probability_max[i])).length;
     if (r) L.push('今週は雨予報（' + r + '日）');
   }
