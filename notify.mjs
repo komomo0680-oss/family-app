@@ -146,22 +146,16 @@ function newsLines(events, todos, w, td, cityName, bring) {
     L.push(s);
   }
   const wd = new Date(td + 'T00:00:00Z').getUTCDay();
-  const items = (bring || []).filter((b) => (b.days || []).includes(wd)).map((b) => b.name + (b.who ? '（' + b.who + '）' : ''));
+  const hourN = new Date(now + TZ_HOURS * 3600e3).getUTCHours();
+  const night = hourN >= 19 || hourN < 4; // 19時〜翌4時は「明日の持ち物」だけを出す（今日の持ち物は消す）。本人の指定 2026-11-03
+  const bi = night && hourN >= 19 ? 1 : 0; // 持ち物の対象：19時以降は明日ぶん、0〜3時は日付が進んだ当日ぶん（＝準備する日）
+  const items = (bring || []).filter((b) => (b.days || []).includes((wd + bi) % 7)).map((b) => b.name + (b.who ? '（' + b.who + '）' : ''));
   if (w) {
-    if (isRain(w.weather_code[0], w.precipitation_probability_max[0])) items.push('傘（雨予報）');
-    if (w.temperature_2m_max[0] >= 28) items.push('水筒（暑い日）');
-    if (w.temperature_2m_min[0] <= 8) items.push('上着（寒い日）');
+    if (isRain(w.weather_code[bi], w.precipitation_probability_max[bi])) items.push('傘（雨予報）');
+    if (w.temperature_2m_max[bi] >= 28) items.push('水筒（暑い日）');
+    if (w.temperature_2m_min[bi] <= 8) items.push('上着（寒い日）');
   }
-  if (items.length) L.push('🎒 今日の持ち物：' + items.join('、'));
-  if (nx) {
-    const tm = (bring || []).filter((b) => (b.days || []).includes((wd + 1) % 7)).map((b) => b.name + (b.who ? '（' + b.who + '）' : ''));
-    if (w) {
-      if (isRain(w.weather_code[1], w.precipitation_probability_max[1])) tm.push('傘（雨予報）');
-      if (w.temperature_2m_max[1] >= 28) tm.push('水筒（暑い日）');
-      if (w.temperature_2m_min[1] <= 8) tm.push('上着（寒い日）');
-    }
-    if (tm.length) L.push('🎒 明日の持ち物（予告）：' + tm.join('、'));
-  }
+  if (items.length) L.push('🎒 ' + (night ? '明日' : '今日') + 'の持ち物：' + items.join('、'));
   return L;
 }
 const todayStr = nowL.slice(0, 10);
