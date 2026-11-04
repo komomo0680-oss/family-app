@@ -211,11 +211,24 @@ if (cfg.widget !== false) {
     }
     const [pEv, pTd, pBr, pGo] = await Promise.all([u.collection('events').get(), u.collection('todos').get(), u.collection('bring').get(), u.collection('goals').get()]);
     const { weather, cityName } = await weatherFor(u);
-    const todos = sh.td.concat(pTd.docs.map((d) => d.data()));
+    const mine = pTd.docs.map((d) => d.data());
+    const todos = sh.td.concat(mine);
     const lines = [];
     pGo.docs.map((d) => d.data()).filter((g) => g.kind === 'long' && !g.d).slice(0, 3).forEach((g) => lines.push('🎯 ' + g.t));
-    lines.push(...newsLines(sh.ev.concat(pEv.docs.map((d) => d.data())), todos, weather, todayStr, cityName, sh.br.concat(pBr.docs.map((d) => d.data()))).map((l) => '・' + l));
-    todos.filter((x) => !x.d).slice(0, 5).forEach((x) => lines.push('✅ ' + x.t));
+    // ニュース行からはTODO件数の行を除く（下に共有・個人を分けた詳細を出すため。2026-11-04 本人の指定）
+    lines.push(...newsLines(sh.ev.concat(pEv.docs.map((d) => d.data())), todos, weather, todayStr, cityName, sh.br.concat(pBr.docs.map((d) => d.data()))).filter((l) => !l.startsWith('TODO')).map((l) => '・' + l));
+    // TODO詳細：共有と個人（このウィジェットの持ち主の分だけ）を分けて表示する
+    const inc = (arr) => arr.filter((x) => !x.d).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    const block = (title, arr, cap) => {
+      const list = inc(arr);
+      if (!list.length) return;
+      lines.push('✅ ' + title + '（未完了' + list.length + '件）');
+      list.slice(0, cap).forEach((x) => lines.push('・' + x.t));
+      if (list.length > cap) lines.push('・ほか' + (list.length - cap) + '件');
+    };
+    block('共有TODO', sh.td, 5);
+    block('個人TODO', mine, 5);
+    if (!inc(sh.td).length && !inc(mine).length) lines.push('✅ TODOはぜんぶ終わっています');
     await wdoc.set({ lines, updated: nowL.slice(5, 16).replace('T', ' '), ts: now });
     console.log('ウィジェット：更新（' + u.id.slice(0, 6) + '…）');
   }
