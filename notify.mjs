@@ -214,22 +214,36 @@ if (cfg.widget !== false) {
     const mine = pTd.docs.map((d) => d.data());
     const todos = sh.td.concat(mine);
     const lines = [];
-    pGo.docs.map((d) => d.data()).filter((g) => g.kind === 'long' && !g.d).slice(0, 3).forEach((g) => lines.push('🎯 ' + g.t));
+    const goalT = pGo.docs.map((d) => d.data()).filter((g) => g.kind === 'long' && !g.d).slice(0, 3).map((g) => g.t);
+    goalT.forEach((t) => lines.push('🎯 ' + t));
     // ニュース行からはTODO件数の行を除く（下に共有・個人を分けた詳細を出すため。2026-11-04 本人の指定）
-    lines.push(...newsLines(sh.ev.concat(pEv.docs.map((d) => d.data())), todos, weather, todayStr, cityName, sh.br.concat(pBr.docs.map((d) => d.data()))).filter((l) => !l.startsWith('TODO')).map((l) => '・' + l));
+    const rawNews = newsLines(sh.ev.concat(pEv.docs.map((d) => d.data())), todos, weather, todayStr, cityName, sh.br.concat(pBr.docs.map((d) => d.data()))).filter((l) => !l.startsWith('TODO'));
+    lines.push(...rawNews.map((l) => '・' + l));
     // TODO詳細：共有と個人（このウィジェットの持ち主の分だけ）を分けて表示する
     const inc = (arr) => arr.filter((x) => !x.d).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    const todoLines = [];
     const block = (title, arr, cap) => {
       const list = inc(arr);
       if (!list.length) return;
-      lines.push('✅ ' + title + '（未完了' + list.length + '件）');
-      list.slice(0, cap).forEach((x) => lines.push('・' + x.t));
-      if (list.length > cap) lines.push('・ほか' + (list.length - cap) + '件');
+      todoLines.push('✅ ' + title + '（未完了' + list.length + '件）');
+      list.slice(0, cap).forEach((x) => todoLines.push('・' + x.t));
+      if (list.length > cap) todoLines.push('・ほか' + (list.length - cap) + '件');
     };
     block('共有TODO', sh.td, 5);
     block('個人TODO', mine, 5);
-    if (!inc(sh.td).length && !inc(mine).length) lines.push('✅ TODOはぜんぶ終わっています');
-    await wdoc.set({ lines, updated: nowL.slice(5, 16).replace('T', ' '), ts: now });
+    if (!inc(sh.td).length && !inc(mine).length) todoLines.push('✅ TODOはぜんぶ終わっています');
+    lines.push(...todoLines);
+    // セクション表示用（2026-11-09追加。新ウィジェットが使う。旧ウィジェットは lines のまま動く）
+    const sections = [];
+    if (goalT.length) sections.push('#H 🎯 目標\n' + goalT.map((t) => '・' + t).join('\n'));
+    const evL = rawNews.filter((l) => l.startsWith('今日の予定') || l.startsWith('明日は') || (l.includes('まであと') && l.endsWith('日')));
+    if (evL.length) sections.push('#H 📅 予定\n' + evL.map((l) => '・' + l).join('\n'));
+    const weL = rawNews.find((l) => l.includes('最高') && l.includes('最低'));
+    if (weL) sections.push('#H 🌤️ 天気\n・' + weL);
+    const beL = rawNews.find((l) => l.startsWith('🎒 '));
+    if (beL) sections.push('#H 🎒 持ち物\n' + beL.replace(/^🎒 /, ''));
+    if (todoLines.length) sections.push('#H \n' + todoLines.join('\n'));
+    await wdoc.set({ lines, sections, updated: nowL.slice(5, 16).replace('T', ' '), ts: now });
     console.log('ウィジェット：更新（' + u.id.slice(0, 6) + '…）');
   }
 }
