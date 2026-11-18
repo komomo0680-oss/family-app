@@ -1,1 +1,1 @@
-{"apkUrl":"https://github.com/komomo0680-oss/family-app/releases/download/widget-v3/konishike.apk","notes":"インストールブロックの根本修正（権限を削除し、更新はブラウザで開く方式に変更）","versionCode":3,"versionName":"2.1"}
+{"apkUrl":"https://github.com/komomo0680-oss/family-app/releases/download/widget-v4/konishike.apk","notes":"自動更新が夜間に止まる問題の修正（省電力中でも起きるアラーム方式に変更）","versionCode":4,"versionName":"2.2"}
