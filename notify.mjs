@@ -28,7 +28,7 @@ for (const u of userRefs) {
   const snap = await u.collection('devices').get();
   snap.forEach((d) => {
     const x = d.data();
-    if (x.token) devices.push({ uid: u.id, ref: d.ref, token: x.token, chat: x.chat !== false, news: x.news !== false });
+    if (x.token) devices.push({ uid: u.id, ref: d.ref, token: x.token, chat: x.chat !== false, news: x.news !== false, deadSince: x.deadSince || '' });
   });
 }
 console.log(`登録された端末：${devices.length}台`);
@@ -50,7 +50,18 @@ async function send(list, title, body, tag) {
       if (c === 'messaging/registration-token-not-registered' || c === 'messaging/invalid-registration-token') dead.add(tokens[i]);
     }
   });
-  for (const d of list) if (dead.has(d.token)) await d.ref.delete().catch(() => {});
+  // 届かなかった端末は、すぐ消さず3日間は様子を見る（一時的な失敗で登録が消えるのを防ぐ）
+  const dd = (a, b) => Math.round((Date.parse(a + 'T00:00:00Z') - Date.parse(b + 'T00:00:00Z')) / 864e5);
+  const todayJ = nowL.slice(0, 10);
+  for (const d of list) {
+    if (dead.has(d.token)) {
+      if (!d.deadSince) { await d.ref.update({ deadSince: todayJ }).catch(() => {}); console.log('送信失敗：登録は消さず、様子見にしました'); }
+      else if (dd(todayJ, d.deadSince) >= 3) { await d.ref.delete().catch(() => {}); console.log('登録を削除しました（失敗が3日以上続いたため）'); }
+    } else if (d.deadSince) {
+      await d.ref.update({ deadSince: admin.firestore.FieldValue.delete() }).catch(() => {});
+      d.deadSince = '';
+    }
+  }
   const okCount = res.responses.filter((r) => r.success).length;
   console.log(`送信：${title} ${body.slice(0, 20)}（${okCount}/${tokens.length}台に成功）`);
   return okCount;
